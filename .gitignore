@@ -1,0 +1,11 @@
+node_modules/
+auth/
+*.log
+bun.lockb
+.env
+.env.*
+coverage/
+dist/
+.wrangler/
+.turbo/
+.vercel/

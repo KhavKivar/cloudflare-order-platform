@@ -1,0 +1,9 @@
+name = "ordersapp-backend"
+main = "src/index.ts"
+compatibility_date = "2024-04-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "order-db"
+database_id = "d8a71718-0b52-462f-859b-800bdcc8f6f9"
+migrations_dir = "drizzle"
