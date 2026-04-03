@@ -1,10 +1,18 @@
-import { eq, isNull, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { DrizzleD1Database } from "drizzle-orm/d1";
 import { clients, orderLines, orders, products } from "../../db/schema.js";
-import { CLIENT_NOT_FOUND, ORDER_NOT_FOUND, PRODUCT_NOT_FOUND } from "../../utils/error_enum.js";
+import {
+  CLIENT_NOT_FOUND,
+  ORDER_NOT_FOUND,
+  PRODUCT_NOT_FOUND,
+} from "../../utils/error_enum.js";
 import { ClientService } from "../clients/clients.service.js";
 import { ProductService } from "../products/products.service.js";
-import { CreateOrderInput, OrderListItem, UpdateOrderInput } from "./orders.schema.js";
+import {
+  CreateOrderInput,
+  OrderListItem,
+  UpdateOrderInput,
+} from "./orders.schema.js";
 
 export class OrderService {
   private readonly clientService: ClientService;
@@ -69,20 +77,20 @@ export class OrderService {
   }
 
   async createOrder(input: CreateOrderInput) {
-    // D1 transactions are handled differently, but drizzle-orm/d1 supports them
-    return await this.db.transaction(async (tx) => {
-      const client = await this.clientService.getClientById(input.clientId);
-      if (!client) throw new Error(CLIENT_NOT_FOUND);
+    const client = await this.clientService.getClientById(input.clientId);
+    if (!client) throw new Error(CLIENT_NOT_FOUND);
 
-      for (const item of input.items) {
-        const product = await this.productService.getProductById(item.productId);
-        if (!product) throw new Error(PRODUCT_NOT_FOUND);
-      }
+    for (const item of input.items) {
+      const product = await this.productService.getProductById(item.productId);
+      if (!product) throw new Error(PRODUCT_NOT_FOUND);
+    }
 
-      const orderResults = await tx
+    try {
+      const orderResults = await this.db
         .insert(orders)
         .values({ clientId: input.clientId })
         .returning();
+
       const createdOrder = orderResults[0];
 
       const itemsToInsert = input.items.map((item) => ({
@@ -90,16 +98,21 @@ export class OrderService {
         productId: item.productId,
         pricePerUnit: item.pricePerUnit,
         quantity: item.quantity,
-        lineTotal: item.pricePerUnit * item.quantity,
       }));
 
-      const createdLines = await tx
+      const createdLines = await this.db
         .insert(orderLines)
         .values(itemsToInsert)
         .returning();
 
-      return { order: createdOrder, lines: createdLines };
-    });
+      return {
+        ...createdOrder,
+        orderLines: createdLines,
+      };
+    } catch (error) {
+      console.error("Error creating order:", error);
+      throw error;
+    }
   }
 
   async getOrderById(id: number): Promise<OrderListItem | null> {
@@ -156,46 +169,54 @@ export class OrderService {
   }
 
   async updateOrder(id: number, input: UpdateOrderInput) {
-    return await this.db.transaction(async (tx) => {
-      const orderResults = await tx
+    try {
+      const orderResults = await this.db
         .update(orders)
         .set({ clientId: input.clientId })
         .where(eq(orders.id, id))
         .returning();
-      
-      const updatedOrder = orderResults[0];
-      if (!updatedOrder) throw new Error(ORDER_NOT_FOUND);
 
-      await tx.delete(orderLines).where(eq(orderLines.orderId, id));
+      if (orderResults.length === 0) {
+        throw new Error(ORDER_NOT_FOUND);
+      }
+
+      const updatedOrder = orderResults[0];
+
+      // Replace lines: delete and re-insert
+      await this.db.delete(orderLines).where(eq(orderLines.orderId, id));
 
       const itemsToInsert = input.items.map((item) => ({
         orderId: updatedOrder.id,
         productId: item.productId,
         pricePerUnit: item.pricePerUnit,
         quantity: item.quantity,
-        lineTotal: item.pricePerUnit * item.quantity,
       }));
 
-      const updatedLines = await tx
+      const updatedLines = await this.db
         .insert(orderLines)
         .values(itemsToInsert)
         .returning();
 
-      return { order: updatedOrder, lines: updatedLines };
-    });
+      return {
+        ...updatedOrder,
+        orderLines: updatedLines,
+      };
+    } catch (error) {
+      console.error("Error updating order:", error);
+      throw error;
+    }
   }
 
   async deleteOrder(id: number) {
-    return await this.db.transaction(async (tx) => {
-      await tx.delete(orderLines).where(eq(orderLines.orderId, id));
-      const results = await tx
-        .delete(orders)
-        .where(eq(orders.id, id))
-        .returning();
+    // We do these in sequence since interactive transactions are not supported well in D1
+    await this.db.delete(orderLines).where(eq(orderLines.orderId, id));
+    const results = await this.db
+      .delete(orders)
+      .where(eq(orders.id, id))
+      .returning();
 
-      if (results.length === 0) throw new Error(ORDER_NOT_FOUND);
-      return results[0];
-    });
+    if (results.length === 0) throw new Error(ORDER_NOT_FOUND);
+    return results[0];
   }
 
   async updateStatus(id: number, status: string) {

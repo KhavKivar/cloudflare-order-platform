@@ -8,9 +8,9 @@ const purchaseOrdersApp = new Hono<{ Bindings: Bindings }>();
 
 purchaseOrdersApp.get("/", async (c) => {
   const db = getDb(c.env);
-  const poService = new PurchaseOrderService(db);
-  const purchaseOrders = await poService.listPurchaseOrders();
-  return c.json({ purchaseOrders });
+  const purchaseOrderService = new PurchaseOrderService(db);
+  const orders = await purchaseOrderService.listPurchaseOrders();
+  return c.json({ orders });
 });
 
 purchaseOrdersApp.get("/:id", async (c) => {

@@ -74,14 +74,14 @@ export class PurchaseOrderService {
     purchaseOrderId: number,
     input: CreatePurchaseOrderInput,
   ) {
-    return await this.db.transaction(async (tx) => {
-      await tx
+    try {
+      await this.db
         .update(orders)
         .set({ purchaseOrderId: null })
         .where(eq(orders.purchaseOrderId, purchaseOrderId));
 
       if (input.orderListIds.length > 0) {
-        await tx
+        await this.db
           .update(orders)
           .set({ purchaseOrderId: purchaseOrderId })
           .where(inArray(orders.id, input.orderListIds));
@@ -91,7 +91,11 @@ export class PurchaseOrderService {
         message: "Purchase order updated successfully",
         id: purchaseOrderId,
       };
-    });
+    } catch (error) {
+      console.error("Error updating purchase order:", error);
+      throw error;
+    }
+
   }
 
   async createPurchaseOrder(input: CreatePurchaseOrderInput) {

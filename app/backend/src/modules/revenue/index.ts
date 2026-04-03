@@ -4,6 +4,13 @@ import { RevenueService } from "./revenue.service.js";
 
 const revenueApp = new Hono<{ Bindings: Bindings }>();
 
+revenueApp.get("/", async (c) => {
+  const db = getDb(c.env);
+  const revenueService = new RevenueService(db);
+  const revenue = await revenueService.getRevenueByDay();
+  return c.json({ revenue });
+});
+
 revenueApp.get("/day", async (c) => {
   const db = getDb(c.env);
   const revenueService = new RevenueService(db);

@@ -7,7 +7,7 @@ import {
   removeSelectedPurchaseOrder,
   selectedPurchaseOrder,
 } from "@/app/purchaseOrderSlice";
-import { Button } from "@/components/ui/Button/button";
+import { Button } from "@/components/ui/button";
 import {
   getOrders,
   type OrderListItem,
@@ -56,10 +56,10 @@ export default function PurchaseOrderSelectPage() {
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
           Seleccionar Pedidos
         </h1>
-        <p className="max-w-2xl text-base text-slate-500">
+        <p className="max-w-2xl text-base text-muted-foreground">
           Elige los pedidos que deseas consolidar en una nueva orden de compra
           para tu proveedor.
         </p>
@@ -67,16 +67,16 @@ export default function PurchaseOrderSelectPage() {
 
       <section className="relative pb-24 sm:pb-0">
         <div className="flex flex-col gap-4">
-          <div className="hidden sm:flex sm:items-center sm:justify-between sm:rounded-2xl sm:bg-white sm:p-4 sm:shadow-sm sm:border sm:border-slate-100">
+          <div className="hidden sm:flex sm:items-center sm:justify-between sm:rounded-2xl sm:bg-card sm:p-4 sm:shadow-sm sm:border sm:border-border">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <ShoppingCart className="size-5" />
               </div>
               <div>
-                <p className="font-semibold text-slate-900">
+                <p className="font-semibold text-foreground">
                   {selectedOrders.length} pedidos seleccionados
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   {selectedOrders.length > 0
                     ? "Listo para consolidar"
                     : "Selecciona al menos uno"}
@@ -84,7 +84,6 @@ export default function PurchaseOrderSelectPage() {
               </div>
             </div>
             <Button
-              variant="primary"
               onClick={handleGoToSummary}
               disabled={selectedOrders.length === 0}
               className="px-6"
@@ -95,28 +94,28 @@ export default function PurchaseOrderSelectPage() {
           </div>
 
           {isPending && (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-              <div className="size-10 animate-spin rounded-full border-4 border-indigo-100 border-t-indigo-600 mb-4" />
+            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+              <div className="size-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary mb-4" />
               <p>Cargando pedidos...</p>
             </div>
           )}
 
           {error && (
-            <div className="rounded-2xl border border-rose-100 bg-rose-50 p-8 text-center text-rose-600">
+            <div className="rounded-2xl border border-destructive/10 bg-destructive/5 p-8 text-center text-destructive">
               <p className="font-semibold">Error al cargar los pedidos</p>
-              <p className="mt-1 text-sm opacity-80 text-rose-500">
+              <p className="mt-1 text-sm opacity-80">
                 Por favor, intenta nuevamente más tarde.
               </p>
             </div>
           )}
 
           {!isPending && !error && ordersDataFiltered?.length === 0 && (
-            <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-12 text-center">
-              <Package className="mx-auto size-12 text-slate-300" />
-              <h3 className="mt-4 text-lg font-semibold text-slate-900">
+            <div className="rounded-3xl border border-dashed border-border bg-card p-12 text-center">
+              <Package className="mx-auto size-12 text-muted-foreground/50" />
+              <h3 className="mt-4 text-lg font-semibold text-foreground">
                 No hay pedidos pendientes
               </h3>
-              <p className="mt-2 text-slate-500">
+              <p className="mt-2 text-muted-foreground">
                 Todos los pedidos ya están asociados a una orden de compra o no
                 hay registros.
               </p>
@@ -148,21 +147,20 @@ export default function PurchaseOrderSelectPage() {
       </section>
 
       {/* STICKY BOTTOM BAR FOR MOBILE */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/80 p-4 backdrop-blur-lg sm:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/80 p-4 backdrop-blur-lg sm:hidden">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-4">
           <div className="flex flex-col">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               Seleccionados
             </span>
-            <span className="text-lg font-bold text-slate-900">
+            <span className="text-lg font-bold text-foreground">
               {selectedOrders.length} Pedidos
             </span>
           </div>
           <Button
-            variant="primary"
             onClick={handleGoToSummary}
             disabled={selectedOrders.length === 0}
-            className="flex-1 h-12 shadow-lg shadow-indigo-100"
+            className="flex-1 h-12 shadow-lg shadow-primary/10"
           >
             Siguiente
             <ArrowRight className="ml-2 size-4" />

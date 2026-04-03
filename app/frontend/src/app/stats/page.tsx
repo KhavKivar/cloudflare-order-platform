@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/Button/button";
-import { Card } from "@/components/ui/Card/card";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   ChartContainer,
   ChartTooltip,
@@ -86,7 +86,7 @@ const normalizeRevenue = (entries: Revenue[]) => {
 
     // Key única YYYY-MM-DD para agrupar mismo día si fuera necesario
     const key = date.toISOString().split("T")[0];
-    const gain = Number(entry.totalGain) || 0;
+    const gain = entry.revenue || 0;
 
     const existing = dailyMap.get(key);
     if (existing) {
@@ -165,14 +165,14 @@ export default function StatsPage() {
   if (error) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center gap-6 px-6 text-center">
-        <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-rose-50 text-rose-500 shadow-inner">
+        <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-destructive/10 text-destructive shadow-inner">
           <AlertCircle className="h-10 w-10" />
         </div>
         <div className="max-w-xs">
-          <h3 className="text-xl font-black text-slate-900">
+          <h3 className="text-xl font-black text-foreground">
             Error de Conexión
           </h3>
-          <p className="mt-2 font-medium text-slate-400">
+          <p className="mt-2 font-medium text-muted-foreground">
             No pudimos sincronizar los datos financieros en este momento.
           </p>
         </div>
@@ -188,7 +188,7 @@ export default function StatsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 pb-20">
+    <div className="min-h-screen bg-background pb-20">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-4 pt-8 sm:px-6">
         {/* HEADER */}
         <header className="flex flex-col gap-2">
@@ -196,24 +196,24 @@ export default function StatsPage() {
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-200">
               <BarChart3 className="size-6" />
             </div>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900">
+            <h1 className="text-3xl font-black tracking-tight text-foreground">
               Métricas de Negocio
             </h1>
           </div>
-          <p className="text-slate-500 font-medium ml-1">
+          <p className="text-muted-foreground font-medium ml-1">
             Análisis de rentabilidad y rendimiento de ventas.
           </p>
         </header>
 
         {dailyGains.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-[3rem] border-2 border-dashed border-slate-200 bg-white/50 p-20 text-center">
-            <div className="bg-slate-100 p-6 rounded-full mb-6">
-              <BarChart3 className="h-10 w-10 text-slate-300" />
+            <div className="bg-muted p-6 rounded-full mb-6">
+              <BarChart3 className="h-10 w-10 text-muted-foreground/50" />
             </div>
-            <h3 className="text-2xl font-black text-slate-900">
+            <h3 className="text-2xl font-black text-foreground">
               Sin estadísticas
             </h3>
-            <p className="mt-2 text-slate-500 font-medium max-w-xs mx-auto">
+            <p className="mt-2 text-muted-foreground font-medium max-w-xs mx-auto">
               Comienza a registrar ventas en la sección de pedidos para generar
               reportes.
             </p>
@@ -248,11 +248,11 @@ export default function StatsPage() {
             {/* CHART SECTION - Modern & Floating */}
             <section className="space-y-4">
               <div className="flex items-center justify-between px-2">
-                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">
+                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">
                   Evolución Semanal
                 </h3>
               </div>
-              <Card className="p-8 rounded-[2.5rem] border-0 bg-white shadow-xl shadow-slate-200/50 ring-1 ring-slate-100">
+              <Card className="p-8 rounded-[2.5rem] border border-border bg-card shadow-sm shadow-slate-200/50 ring-1 ring-border">
                 <ChartContainer
                   config={chartConfig}
                   className="h-[320px] w-full"
@@ -264,7 +264,7 @@ export default function StatsPage() {
                     <CartesianGrid
                       vertical={false}
                       strokeDasharray="4 4"
-                      stroke="#f1f5f9"
+                      className="stroke-border"
                     />
                     <XAxis
                       dataKey="label"
@@ -273,14 +273,14 @@ export default function StatsPage() {
                       tickMargin={16}
                       fontSize={11}
                       fontWeight={700}
-                      tick={{ fill: "#94a3b8" }}
+                      tick={{ fill: "var(--color-muted-foreground)" }}
                     />
                     <YAxis hide />
                     <ChartTooltip
                       cursor={{ fill: "rgba(79, 70, 229, 0.05)", radius: 12 }}
                       content={
                         <ChartTooltipContent
-                          className="bg-slate-900 border-0 text-white shadow-2xl rounded-2xl p-4"
+                          className="bg-secondary border-0 text-secondary-foreground shadow-2xl rounded-2xl p-4"
                           formatter={(value) => (
                             <span className="text-lg font-black text-white">
                               {formatChileanPeso(Number(value))}
@@ -291,7 +291,7 @@ export default function StatsPage() {
                     />
                     <Bar
                       dataKey="gain"
-                      fill="#4f46e5"
+                      fill="var(--color-gain)"
                       radius={[12, 12, 4, 4]}
                       maxBarSize={50}
                     />
@@ -303,7 +303,7 @@ export default function StatsPage() {
             {/* LISTA DETALLADA - Clean Feed */}
             <section className="space-y-4">
               <div className="flex items-center justify-between px-2">
-                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">
+                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">
                   Desglose por Jornada
                 </h3>
               </div>
@@ -311,26 +311,26 @@ export default function StatsPage() {
                 {dailyGains.map((entry) => (
                   <Card
                     key={entry.label}
-                    className="flex items-center justify-between px-6 py-5 rounded-2xl border-0 bg-white ring-1 ring-slate-100 transition-all hover:ring-2 hover:ring-indigo-100/50 active:scale-[0.99]"
+                    className="flex items-center justify-between px-6 py-5 rounded-2xl border border-border bg-card transition-all hover:ring-2 hover:ring-indigo-100/50 active:scale-[0.99]"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
                         <Calendar className="h-6 w-6" />
                       </div>
                       <div>
-                        <p className="font-bold text-slate-900 capitalize leading-none">
+                        <p className="font-bold text-foreground capitalize leading-none">
                           {entry.date.toLocaleDateString("es-CL", {
                             weekday: "long",
                             day: "numeric",
                             month: "long",
                           })}
                         </p>
-                        <p className="mt-1.5 text-xs font-black uppercase tracking-widest text-slate-300">
+                        <p className="mt-1.5 text-xs font-black uppercase tracking-widest text-muted-foreground">
                           Operación diaria
                         </p>
                       </div>
                     </div>
-                    <span className="text-xl font-black tracking-tight text-slate-900">
+                    <span className="text-xl font-black tracking-tight text-foreground">
                       {formatChileanPeso(entry.gain)}
                     </span>
                   </Card>
@@ -356,19 +356,19 @@ type KpiCardProps = {
 
 const VARIANT_STYLES = {
   indigo: {
-    bg: "bg-indigo-50",
-    text: "text-indigo-600",
-    ring: "hover:ring-indigo-100",
+    bg: "bg-primary/10",
+    text: "text-primary",
+    ring: "hover:ring-primary/10",
   },
   emerald: {
-    bg: "bg-emerald-50",
-    text: "text-emerald-600",
-    ring: "hover:ring-emerald-100",
+    bg: "bg-success/10",
+    text: "text-success",
+    ring: "hover:ring-success/10",
   },
   amber: {
-    bg: "bg-amber-50",
-    text: "text-amber-600",
-    ring: "hover:ring-amber-100",
+    bg: "bg-warning/10",
+    text: "text-warning",
+    ring: "hover:ring-warning/10",
   },
 };
 
@@ -384,18 +384,18 @@ function KpiCard({
   return (
     <Card
       className={cn(
-        "relative overflow-hidden p-6 rounded-[2rem] border-0 bg-white shadow-sm ring-1 ring-slate-100 transition-all hover:shadow-xl hover:shadow-slate-200/50",
+        "relative overflow-hidden p-6 rounded-[2rem] border-0 bg-card shadow-sm ring-1 ring-border transition-all hover:shadow-xl",
         styles.ring,
       )}
     >
       <div className="flex items-start justify-between">
         <div className="space-y-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
             {title}
           </p>
-          <div className="text-2xl font-black text-slate-900">{value}</div>
+          <div className="text-2xl font-black text-foreground">{value}</div>
           {subtitle && (
-            <p className="text-xs font-bold text-slate-500/80">{subtitle}</p>
+            <p className="text-xs font-bold text-muted-foreground/80">{subtitle}</p>
           )}
         </div>
         <div

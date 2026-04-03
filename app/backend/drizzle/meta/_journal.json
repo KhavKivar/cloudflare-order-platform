@@ -8,6 +8,20 @@
       "when": 1775152345332,
       "tag": "0000_youthful_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1775165186482,
+      "tag": "0001_22rd",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1775165190369,
+      "tag": "0002_3rd",
+      "breakpoints": true
     }
   ]
 }

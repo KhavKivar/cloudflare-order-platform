@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Button } from "@/components/ui/Button/button";
-import Input from "@/components/ui/Input/input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import httpClient from "@/lib/api-provider";
 
@@ -34,21 +34,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
       <div className="w-full max-w-sm">
-        <div className="bg-white border border-slate-200 p-8 rounded-2xl shadow-sm">
+        <div className="bg-card border border-border p-8 rounded-2xl shadow-sm">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-slate-900 mb-1">
+            <h1 className="text-2xl font-bold text-foreground mb-1">
               OrderSapp
             </h1>
-            <p className="text-slate-500 text-sm">Panel de administración</p>
+            <p className="text-muted-foreground text-sm">Panel de administración</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <label
                 htmlFor="key"
-                className="text-sm font-medium text-slate-700 ml-0.5"
+                className="text-sm font-medium text-muted-foreground ml-0.5"
               >
                 Llave de acceso
               </label>
@@ -56,21 +56,21 @@ export default function LoginPage() {
                 id="key"
                 type="password"
                 value={key}
-                onChange={(e) => setKey(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setKey(e.target.value)}
                 placeholder="Ingresa tu token"
-                className="h-11 border-slate-200 focus:border-amber-400 focus:ring-amber-100 transition-all"
+                className="h-11 focus:border-primary focus:ring-primary/20 transition-all"
                 required
               />
             </div>
 
             <Button
               type="submit"
-              className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-lg transition-colors active:scale-[0.98]"
+              className="w-full h-11 font-medium rounded-lg transition-colors active:scale-[0.98]"
               disabled={loading}
             >
               {loading ? (
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-slate-400 border-t-white rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-muted-foreground border-t-primary-foreground rounded-full animate-spin" />
                   Verificando...
                 </div>
               ) : (
@@ -80,7 +80,7 @@ export default function LoginPage() {
           </form>
 
           <footer className="mt-8 text-center">
-            <p className="text-[10px] uppercase tracking-wider text-slate-400 font-medium">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
               &copy; {new Date().getFullYear()} Vasvani App
             </p>
           </footer>

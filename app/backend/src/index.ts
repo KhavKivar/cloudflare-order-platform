@@ -9,13 +9,25 @@ app.use("*", logger());
 app.use(
   "*",
   cors({
-    origin: [
-      "https://vasvani.vercel.app",
-      "https://vasvani.shop",
-      "https://www.vasvani.shop",
-      "https://www.vasvani.vercel.app",
-      "http://localhost:5173",
-    ],
+    origin: (origin) => {
+      if (!origin) return null;
+      const allowedOrigins = [
+        "https://vasvani.shop",
+        "https://www.vasvani.shop",
+        "https://vasvani.vercel.app",
+        "https://www.vasvani.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:8788",
+        "http://127.0.0.1:8788",
+      ];
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith("vasvani.pages.dev")
+      ) {
+        return origin;
+      }
+      return null;
+    },
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     exposeHeaders: ["Content-Length"],

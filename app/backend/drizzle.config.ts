@@ -1,11 +1,14 @@
-import type { Config } from "drizzle-kit";
+import "dotenv/config";
+import { defineConfig } from "drizzle-kit";
 
-export default {
+export default defineConfig({
+  out: "./src/db",
   schema: "./src/db/schema.ts",
-  out: "./drizzle",
   dialect: "sqlite",
+  driver: "d1-http",
   dbCredentials: {
-    wranglerConfigPath: "wrangler.toml",
-    dbName: "ordersapp-db",
+    accountId: process.env.CLOUDFLARE_ACCOUNT_ID!,
+    databaseId: process.env.CLOUDFLARE_DATABASE_ID!,
+    token: process.env.CLOUDFLARE_D1_TOKEN!,
   },
-} satisfies Config;
+});

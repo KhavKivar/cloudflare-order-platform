@@ -1,0 +1,29 @@
+schema: spec-driven
+
+context: |
+  Stack: React 19 + Vite 7 + TailwindCSS 4 + Hono (Cloudflare Workers) + Drizzle D1
+  Architecture: Monorepo — app/frontend (SPA) + app/backend (CF Worker)
+  Testing: None configured
+  Style: TypeScript strict, double quotes, ESLint (frontend)
+
+rules:
+  proposal:
+    - Include rollback plan (git revert is always valid — no DB changes)
+    - Identify all affected import paths
+  specs:
+    - Use Given/When/Then format for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Document component replacement mappings
+    - Note TailwindCSS v4 compatibility considerations
+  tasks:
+    - Group by phase (setup, components, imports, cleanup)
+    - Keep tasks small enough to complete in one session
+  apply:
+    - Follow existing code patterns (functional components, named exports)
+    - Mobile-first — verify 375px viewport after each component change
+  verify:
+    - Run tsc --noEmit after each phase
+    - Check no references to deleted components remain
+  archive:
+    - Warn before merging destructive deltas (component deletions)

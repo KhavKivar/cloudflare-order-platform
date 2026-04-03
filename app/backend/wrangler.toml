@@ -1,6 +1,6 @@
 name = "ordersapp-backend"
 main = "src/index.ts"
-compatibility_date = "2024-04-01"
+compatibility_date = "2026-04-02"
 
 [[d1_databases]]
 binding = "DB"

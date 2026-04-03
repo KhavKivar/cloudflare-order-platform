@@ -6,7 +6,7 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
 
-import { Button } from "@/components/ui/Button/button";
+import { Button } from "@/components/ui/button";
 import { deleteOrder } from "@/features/orders/api/delete-order";
 import {
   getOrders,
@@ -94,19 +94,19 @@ export default function OrdersListPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50 pb-20">
+    <div className="min-h-screen bg-background pb-20">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 pt-8 sm:px-6">
         {/* HEADER SECTION */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-600 text-white shadow-lg shadow-rose-200">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive text-destructive-foreground shadow-lg shadow-destructive/20">
               <ShoppingBag className="size-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-black tracking-tight text-slate-900">
+              <h1 className="text-2xl font-black tracking-tight text-foreground">
                 Lista de Pedidos
               </h1>
-              <p className="text-sm font-medium text-slate-500">
+              <p className="text-sm font-medium text-muted-foreground">
                 {data?.orders.length ?? 0} registros encontrados
               </p>
             </div>
@@ -115,7 +115,7 @@ export default function OrdersListPage() {
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
             <Button
               onClick={() => navigate("/order/new")}
-              className="group h-10 w-full rounded-md bg-slate-900 text-white shadow-lg transition-all hover:bg-slate-800 sm:w-auto"
+              className="group shadow-lg transition-all sm:w-auto"
             >
               <Plus className="mr-2 size-4 transition-transform group-hover:rotate-90" />
               Nuevo Pedido
@@ -128,7 +128,7 @@ export default function OrdersListPage() {
                     variant="outline"
                     role="combobox"
                     aria-expanded={open}
-                    className="h-10 w-full justify-between border-slate-200 bg-white shadow-none sm:w-[240px]"
+                    className="h-10 w-full justify-between border-border bg-background shadow-none sm:w-[240px]"
                   >
                     <span className="truncate">
                       {value && data?.orders
@@ -180,7 +180,7 @@ export default function OrdersListPage() {
                 <Button
                   variant="outline"
                   onClick={() => setValue("")}
-                  className="w-full border-slate-200 bg-white text-slate-700 shadow-none hover:bg-slate-50 sm:w-auto"
+                  className="w-full border-border bg-background text-muted-foreground shadow-none hover:bg-muted sm:w-auto"
                 >
                   <X className="mr-2 h-4 w-4" />
                   Limpiar
@@ -192,7 +192,7 @@ export default function OrdersListPage() {
 
         {/* FEEDBACK STATES */}
         {isPending && (
-          <div className="flex flex-col items-center justify-center py-24 text-slate-400">
+          <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
             <div className="size-12 animate-spin rounded-full border-4 border-slate-200 border-t-rose-600 mb-4" />
             <p className="font-bold tracking-tight">Cargando pedidos...</p>
           </div>

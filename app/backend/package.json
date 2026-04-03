@@ -5,23 +5,32 @@
   "description": "OrderSapp Backend - Cloudflare Worker",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "wrangler dev --env-file .env",
     "deploy": "wrangler deploy",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "drizzle:generate": "drizzle-kit generate",
     "drizzle:migrate": "drizzle-kit migrate",
-    "drizzle:studio": "drizzle-kit studio"
+    "drizzle:studio": "drizzle-kit studio",
+    "db:migrate:remote": "wrangler d1 migrations apply order-db --remote",
+    "db:migrate:local": "wrangler d1 migrations apply order-db --local",
+    "generate-types": "wrangler types --env-interface CloudflareBindings",
+    "db:pull": "drizzle-kit pull",
+    "db:migrate": "drizzle-kit migrate",
+    "generate-migration": "npx drizzle-kit generate --custom --name"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250224.0",
+    "@cloudflare/workers-types": "^4.20260402.1",
+    "@types/node": "^22.19.15",
+    "dotenv": "^16.4.7",
     "drizzle-kit": "^0.30.5",
     "typescript": "^5.7.3",
-    "wrangler": "^3.111.0"
+    "wrangler": "^4.80.0"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.4.3",
-    "drizzle-orm": "^0.40.0",
+    "drizzle-orm": "^0.40.1",
+    "drizzle-zod": "^0.8.3",
     "hono": "^4.12.10",
     "zod": "^3.24.2"
   }

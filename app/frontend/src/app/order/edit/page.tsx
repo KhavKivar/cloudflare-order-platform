@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/Button/button";
-import { Card } from "@/components/ui/Card/card";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Command,
   CommandEmpty,
@@ -15,8 +15,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import FormField from "@/components/ui/Form/form_field";
-import Input from "@/components/ui/Input/input";
+import FormField from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
 import httpClient from "@/lib/api-provider";
 import type { Client } from "@/features/client/api/client.schema";
 import { getOrder, type OrderDetail } from "@/features/orders/api/get-order";
@@ -227,19 +227,19 @@ export default function OrdersEditPage() {
 
   if (!isOrderIdValid) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50/50">
-        <Card className="rounded-[2.5rem] p-10 text-center max-w-md border-0 shadow-xl shadow-slate-200">
-          <div className="bg-rose-50 text-rose-500 rounded-full h-16 w-16 mx-auto flex items-center justify-center mb-6">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-muted/50">
+        <Card className="rounded-[2.5rem] p-10 text-center max-w-md border-0 shadow-xl">
+          <div className="bg-destructive/10 text-destructive rounded-full h-16 w-16 mx-auto flex items-center justify-center mb-6">
             <AlertCircle className="size-8" />
           </div>
-          <h2 className="text-2xl font-black text-slate-900">
+          <h2 className="text-2xl font-black text-foreground">
             ID de Pedido Inválido
           </h2>
-          <p className="mt-2 font-medium text-slate-500">
+          <p className="mt-2 font-medium text-muted-foreground">
             No hemos podido localizar la orden solicitada.
           </p>
           <Button
-            variant="primary"
+            variant="default"
             onClick={() => navigate("/order")}
             className="mt-8 rounded-2xl px-8 h-12"
           >
@@ -251,17 +251,17 @@ export default function OrdersEditPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 pb-24">
+    <div className="min-h-screen bg-background pb-24">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pt-8 sm:px-6">
         {isLoadingData && (
-          <div className="flex flex-col items-center justify-center py-24 text-slate-400">
-            <div className="size-12 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600 mb-4" />
+          <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
+            <div className="size-12 animate-spin rounded-full border-4 border-border border-t-primary mb-4" />
             <p className="font-bold">Cargando detalles de la orden...</p>
           </div>
         )}
 
         {isErrorData && (
-          <div className="rounded-[2.5rem] border border-rose-100 bg-rose-50 p-12 text-center text-rose-600">
+          <div className="rounded-[2.5rem] border border-destructive/20 bg-destructive/10 p-12 text-center text-destructive">
             <AlertCircle className="mx-auto size-12 mb-4 opacity-50" />
             <p className="text-xl font-black">Error al recuperar datos</p>
             <p className="mt-2 text-sm font-medium opacity-80">
@@ -276,31 +276,31 @@ export default function OrdersEditPage() {
             <div className="space-y-6 min-w-0 w-full">
               <header className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <h1 className="text-3xl font-black tracking-tight text-slate-900">
+                  <h1 className="text-3xl font-black tracking-tight text-foreground">
                     Editar Pedido
                   </h1>
-                  <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                  <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
                     #{orderId}
                   </span>
                 </div>
-                <p className="text-slate-500 font-medium">
+                <p className="text-muted-foreground font-medium">
                   Modifica los detalles de este despacho.
                 </p>
               </header>
 
               <form onSubmit={onSubmit} className="space-y-6">
                 {/* SELECCIÓN CLIENTE (SOLO LECTURA EN EDICIÓN POR SEGURIDAD DE NEGOCIO) */}
-                <div className="rounded-[2rem] border-0 bg-white p-8 shadow-sm ring-1 ring-slate-100 transition-all hover:shadow-md w-full overflow-hidden">
+                <div className="rounded-[2rem] border-0 bg-card p-8 shadow-sm ring-1 ring-border transition-all hover:shadow-md w-full overflow-hidden">
                   <FormField
                     label="Cliente Asignado"
-                    labelClassName="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2"
+                    labelClassName="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2"
                   >
-                    <div className="flex h-14 w-full items-center gap-4 rounded-2xl bg-slate-50 px-5 ring-1 ring-slate-100 border-0">
-                      <Store className="size-5 text-slate-300" />
-                      <span className="font-bold text-slate-400">
+                    <div className="flex h-14 w-full items-center gap-4 rounded-2xl bg-muted px-5 ring-1 ring-border border-0">
+                      <Store className="size-5 text-muted-foreground/50" />
+                      <span className="font-bold text-muted-foreground">
                         {selectClient?.localName ?? "Cargando..."}
                       </span>
-                      <div className="ml-auto text-[8px] font-black text-slate-300 uppercase tracking-widest border border-slate-200 px-2 py-1 rounded-md">
+                      <div className="ml-auto text-[8px] font-black text-muted-foreground/50 uppercase tracking-widest border border-border px-2 py-1 rounded-md">
                         ID: {orderData.clientId}
                       </div>
                     </div>
@@ -308,8 +308,8 @@ export default function OrdersEditPage() {
                 </div>
 
                 {/* GESTIÓN DE PRODUCTOS */}
-                <div className="rounded-[2rem] border-0 bg-white p-8 shadow-sm ring-1 ring-slate-100 w-full overflow-hidden">
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
+                <div className="rounded-[2rem] border-0 bg-card p-8 shadow-sm ring-1 ring-border w-full overflow-hidden">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
                     <Plus className="size-4" />
                     Actualizar Catálogo
                   </h3>
@@ -324,12 +324,12 @@ export default function OrdersEditPage() {
                           <FormField
                             label="Reemplazar o Agregar Producto"
                             error={errors.item?.message}
-                            labelClassName="text-xs font-bold text-slate-700 mb-1.5"
+                            labelClassName="text-xs font-bold text-muted-foreground mb-1.5"
                           >
                             <div
                               className={cn(
-                                "flex h-12 w-full items-center justify-between rounded-xl bg-slate-50 px-4 ring-1 ring-slate-200",
-                                selectProduct && "bg-indigo-50 ring-indigo-200",
+                                "flex h-12 w-full items-center justify-between rounded-xl bg-muted px-4 ring-1 ring-border",
+                                selectProduct && "bg-primary/10 ring-primary/30",
                               )}
                             >
                               <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -337,30 +337,30 @@ export default function OrdersEditPage() {
                                   className={cn(
                                     "size-4 shrink-0",
                                     selectProduct
-                                      ? "text-indigo-600"
-                                      : "text-slate-400",
+                                      ? "text-primary"
+                                      : "text-muted-foreground",
                                   )}
                                 />
                                 <span
                                   className={cn(
                                     "text-sm font-medium truncate block min-w-0 flex-1",
                                     selectProduct
-                                      ? "text-indigo-900"
-                                      : "text-slate-400",
+                                      ? "text-foreground"
+                                      : "text-muted-foreground",
                                   )}
                                 >
                                   {selectProduct?.name ?? "Buscar productos..."}
                                 </span>
                               </div>
-                              <Search className="size-4 text-slate-300 shrink-0 ml-2" />
+                              <Search className="size-4 text-muted-foreground/50 shrink-0 ml-2" />
                             </div>
                           </FormField>
                         </button>
                       </DialogTrigger>
                       <input type="hidden" {...register("item")} />
-                      <DialogContent className="fixed inset-0 z-50 flex h-full w-full max-w-none translate-x-0 translate-y-0 flex-col border-0 bg-white p-0 transition-all sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-[2.5rem] sm:border sm:shadow-2xl overflow-hidden">
-                        <DialogHeader className="bg-slate-900 p-8 text-white">
-                          <DialogTitle className="text-2xl font-black tracking-tight">
+                      <DialogContent className="fixed inset-0 z-50 flex h-full w-full max-w-none translate-x-0 translate-y-0 flex-col border-0 bg-card p-0 transition-all sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-[2.5rem] sm:border sm:shadow-2xl overflow-hidden">
+                        <DialogHeader className="bg-secondary p-8">
+                          <DialogTitle className="text-2xl font-black tracking-tight text-secondary-foreground">
                             Seleccionar Producto
                           </DialogTitle>
                         </DialogHeader>
@@ -371,7 +371,7 @@ export default function OrdersEditPage() {
                               className="h-12 border-0"
                             />
                             <CommandList className="flex-1 max-h-none sm:max-h-[300px] py-2">
-                              <CommandEmpty className="py-6 text-center text-sm font-medium text-slate-400 uppercase tracking-widest">
+                              <CommandEmpty className="py-6 text-center text-sm font-medium text-muted-foreground uppercase tracking-widest">
                                 Sin resultados
                               </CommandEmpty>
                               <CommandGroup>
@@ -395,10 +395,10 @@ export default function OrdersEditPage() {
                                       className="rounded-xl px-4 py-3"
                                     >
                                       <div className="flex items-center justify-between w-full gap-4 overflow-hidden">
-                                        <span className="font-bold text-slate-700 truncate block min-w-0 flex-1">
+                                        <span className="font-bold text-foreground truncate block min-w-0 flex-1">
                                           {product.name}
                                         </span>
-                                        <span className="text-[10px] font-black tracking-widest text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md shrink-0">
+                                        <span className="text-[10px] font-black tracking-widest text-primary bg-primary/10 px-2 py-1 rounded-md shrink-0">
                                           {formatChileanPeso(
                                             product.sellPriceClient,
                                           )}
@@ -418,15 +418,15 @@ export default function OrdersEditPage() {
                       <FormField
                         label="Precio Unitario"
                         error={errors.pricePerUnit?.message}
-                        labelClassName="text-xs font-bold text-slate-700 mb-1.5"
+                        labelClassName="text-xs font-bold text-muted-foreground mb-1.5"
                       >
                         <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-300 group-focus-within:text-indigo-400">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted-foreground/50">
                             $
                           </span>
                           <Input
-                            registration={register("pricePerUnit")}
-                            className="h-12 rounded-xl pl-8 bg-slate-50 ring-1 ring-slate-200 focus:ring-indigo-300"
+                            {...register("pricePerUnit")}
+                            className="h-12 rounded-xl pl-8 bg-muted ring-1 ring-border focus:ring-primary/30"
                             placeholder="0"
                             type="number"
                           />
@@ -436,11 +436,11 @@ export default function OrdersEditPage() {
                       <FormField
                         label="Cantidad"
                         error={errors.quantity?.message}
-                        labelClassName="text-xs font-bold text-slate-700 mb-1.5"
+                        labelClassName="text-xs font-bold text-muted-foreground mb-1.5"
                       >
                         <Input
-                          registration={register("quantity")}
-                          className="h-12 rounded-xl bg-slate-50 ring-1 ring-slate-200 focus:ring-indigo-300"
+                          {...register("quantity")}
+                          className="h-12 rounded-xl bg-muted ring-1 ring-border focus:ring-primary/30"
                           placeholder="1"
                           type="number"
                         />
@@ -449,8 +449,8 @@ export default function OrdersEditPage() {
 
                     <Button
                       type="submit"
-                      variant="primary"
-                      className="h-14 w-full rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 font-bold"
+                      variant="default"
+                      className="h-14 w-full rounded-2xl font-bold"
                     >
                       <Plus className="mr-2 size-5" />
                       Actualizar Línea
@@ -462,20 +462,20 @@ export default function OrdersEditPage() {
 
             {/* LADO DERECHO: RESUMEN / ESTADO FINAL */}
             <aside className="lg:sticky lg:top-24 min-w-0 w-full overflow-hidden">
-              <div className="rounded-[2.5rem] border-0 bg-white shadow-2xl shadow-slate-200/50 ring-1 ring-slate-100 overflow-hidden w-full">
-                <div className="bg-indigo-900 px-8 py-6 text-white flex items-center justify-between">
+              <div className="rounded-[2.5rem] border-0 bg-card shadow-2xl ring-1 ring-border overflow-hidden w-full">
+                <div className="bg-secondary px-8 py-6 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <ShoppingCart className="size-5 text-indigo-300" />
-                    <h2 className="text-lg font-black tracking-tight">
+                    <ShoppingCart className="size-5 text-secondary-foreground/70" />
+                    <h2 className="text-lg font-black tracking-tight text-secondary-foreground">
                       Resumen Final
                     </h2>
                   </div>
-                  <Package className="size-5 opacity-30" />
+                  <Package className="size-5 text-secondary-foreground opacity-30" />
                 </div>
 
                 <div className="p-8">
                   {orderItems.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center text-slate-300">
+                    <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground/50">
                       <ShoppingCart className="size-10 mb-2 opacity-20" />
                       <p className="text-sm font-bold uppercase tracking-widest leading-tight">
                         El pedido está
@@ -488,29 +488,29 @@ export default function OrdersEditPage() {
                       {orderItems.map((item) => (
                         <div
                           key={item.productId}
-                          className="group relative rounded-2xl bg-slate-50/50 p-4 ring-1 ring-slate-100 transition-all hover:bg-white hover:ring-indigo-100"
+                          className="group relative rounded-2xl bg-muted/50 p-4 ring-1 ring-border transition-all hover:bg-card hover:ring-primary/20"
                         >
                           <div className="flex justify-between items-start gap-4 overflow-hidden">
                             <div className="min-w-0 flex-1 pr-4">
-                              <p className="font-black text-slate-900 truncate block">
+                              <p className="font-black text-foreground truncate block">
                                 {item.name}
                               </p>
-                              <p className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-widest">
+                              <p className="text-[10px] font-black text-muted-foreground mt-1 uppercase tracking-widest">
                                 {item.quantity} un. ×{" "}
                                 {formatChileanPeso(item.pricePerUnit)}
                               </p>
                             </div>
-                            <span className="font-black text-slate-900 shrink-0">
+                            <span className="font-black text-foreground shrink-0">
                               {formatChileanPeso(
                                 item.pricePerUnit * item.quantity,
                               )}
                             </span>
                           </div>
-                          <div className="mt-3 flex justify-end border-t border-slate-100/50 pt-2 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                          <div className="mt-3 flex justify-end border-t border-border/50 pt-2 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                             <button
                               type="button"
                               onClick={() => handleRemoveItem(item.productId)}
-                              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-rose-500 hover:text-rose-700"
+                              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-destructive hover:text-destructive/80"
                             >
                               <Trash2 className="size-3.5" />
                               Eliminar item
@@ -521,13 +521,13 @@ export default function OrdersEditPage() {
                     </div>
                   )}
 
-                  <div className="mt-8 border-t border-slate-100 pt-8">
+                  <div className="mt-8 border-t border-border pt-8">
                     <div className="flex items-end justify-between mb-8">
                       <div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 block mb-1">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground block mb-1">
                           Monto Total
                         </span>
-                        <div className="text-4xl font-black tracking-tighter text-indigo-900">
+                        <div className="text-4xl font-black tracking-tighter text-foreground">
                           {formatChileanPeso(orderTotal)}
                         </div>
                       </div>
@@ -536,11 +536,11 @@ export default function OrdersEditPage() {
                     <div className="flex flex-col gap-3">
                       <Button
                         onClick={handleUpdateOrder}
-                        variant="primary"
+                        variant="secondary"
                         disabled={
                           updateMutation.isPending || orderItems.length === 0
                         }
-                        className="w-full h-14 rounded-2xl bg-slate-900 text-white font-black text-lg transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-slate-200"
+                        className="w-full h-14 rounded-2xl font-black text-lg transition-transform hover:scale-[1.02] active:scale-[0.98]"
                       >
                         {updateMutation.isPending ? (
                           "Guardando..."
@@ -554,7 +554,7 @@ export default function OrdersEditPage() {
                       <Button
                         onClick={() => navigate("/order")}
                         variant="ghost"
-                        className="h-10 text-slate-400 font-bold text-xs uppercase tracking-widest"
+                        className="h-10 text-muted-foreground font-bold text-xs uppercase tracking-widest"
                       >
                         <X className="mr-1 size-3" />
                         Descartar cambios

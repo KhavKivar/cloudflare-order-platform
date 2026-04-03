@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/Button/button";
-import { Card } from "@/components/ui/Card/card";
-import FormField from "@/components/ui/Form/form_field";
-import Input from "@/components/ui/Input/input";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import FormField from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
 
 import {
   createClient,
@@ -47,16 +47,16 @@ export default function NewClientPage() {
     error instanceof Error ? error.message : "No se pudo crear el cliente.";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-amber-50 to-rose-50 text-slate-900">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-6 pb-12 pt-4 sm:pt-8 lg:pt-12">
         <header className="space-y-3">
-          <p className="max-w-2xl text-base text-slate-600">
+          <p className="max-w-2xl text-base text-muted-foreground">
             Completa los datos del cliente para usarlo en los pedidos.
           </p>
         </header>
         <Card className="text-left px-6 py-8">
           {error && (
-            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {errorMessage}
             </div>
           )}
@@ -65,10 +65,10 @@ export default function NewClientPage() {
               <FormField
                 label="Nombre local"
                 error={errors.localName?.message}
-                labelClassName="text-sm font-semibold text-slate-700"
+                labelClassName="text-sm font-semibold text-muted-foreground"
               >
                 <Input
-                  registration={register("localName")}
+                  {...register("localName")}
                   placeholder="Nombre del local"
                 />
               </FormField>
@@ -76,10 +76,10 @@ export default function NewClientPage() {
               <FormField
                 label="Direccion"
                 error={errors.address?.message}
-                labelClassName="text-sm font-semibold text-slate-700"
+                labelClassName="text-sm font-semibold text-muted-foreground"
               >
                 <Input
-                  registration={register("address")}
+                  {...register("address")}
                   placeholder="Direccion del cliente"
                 />
               </FormField>
@@ -87,10 +87,10 @@ export default function NewClientPage() {
               <FormField
                 label="Telefono"
                 error={errors.phone?.message}
-                labelClassName="text-sm font-semibold text-slate-700"
+                labelClassName="text-sm font-semibold text-muted-foreground"
               >
                 <Input
-                  registration={register("phone")}
+                  {...register("phone")}
                   placeholder="56912345678"
                   inputMode="tel"
                   maxLength={20}
@@ -99,11 +99,11 @@ export default function NewClientPage() {
             </div>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 Todos los campos son obligatorios.
               </p>
 
-              <Button variant={"primary"} type="submit" disabled={isPending}>
+              <Button variant={"default"} type="submit" disabled={isPending}>
                 {isPending ? "Guardando..." : "Guardar cliente"}
               </Button>
             </div>

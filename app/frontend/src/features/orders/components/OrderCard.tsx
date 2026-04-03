@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/Button/button";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -49,11 +49,11 @@ const STATUS_LABELS: Record<OrderCardProps["status"], string> = {
 };
 
 const STATUS_STYLES: Record<OrderCardProps["status"], string> = {
-  pending: "bg-amber-100 text-amber-700",
-  paid: "bg-emerald-100 text-emerald-700",
-  delivered: "bg-sky-100 text-sky-700",
-  delivered_paid: "bg-emerald-100 text-emerald-700",
-  cancelled: "bg-rose-100 text-rose-700",
+  pending: "bg-warning/15 text-warning-foreground",
+  paid: "bg-success/15 text-success-foreground",
+  delivered: "bg-primary/10 text-primary",
+  delivered_paid: "bg-success/15 text-success-foreground",
+  cancelled: "bg-destructive/10 text-destructive",
 };
 
 export default function OrderCard({
@@ -130,8 +130,8 @@ export default function OrderCard({
       className={cn(
         "group relative rounded-3xl border border-border/70 bg-card/90 p-6 shadow-sm transition-all cursor-pointer",
         isSelected
-          ? "border-emerald-400 bg-emerald-50/50 shadow-md ring-2 ring-emerald-200"
-          : "hover:border-emerald-200 hover:bg-card hover:shadow-md",
+          ? "border-success/50 bg-success/10 shadow-md ring-2 ring-success/30"
+          : "hover:border-success/30 hover:bg-card hover:shadow-md",
       )}
     >
       {/* HEADER: Nombre y Ganancia */}
@@ -145,11 +145,13 @@ export default function OrderCard({
           </h3>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={handleStatusClick}
             className={cn(
-              "rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide transition-all hover:scale-105 active:scale-95",
+              "rounded-full px-3 h-7 text-[10px] font-bold uppercase tracking-wide transition-all hover:scale-105 active:scale-95",
               "whitespace-nowrap max-w-[200px]",
               STATUS_STYLES[status],
               onStatusChange
@@ -162,8 +164,8 @@ export default function OrderCard({
               <span className="truncate">{STATUS_LABELS[status]}</span>
               {onStatusChange && <RefreshCw className="h-3 w-3 shrink-0" />}
             </div>
-          </button>
-          <div className="flex items-center gap-1.5 bg-emerald-100/50 px-2 py-1 rounded-lg text-emerald-700">
+          </Button>
+          <div className="flex items-center gap-1.5 bg-success/10 px-2 py-1 rounded-lg text-success">
             <TrendingUp className="h-3.5 w-3.5" />
             <span className="text-xs font-bold">
               {formatChileanPeso(revenue)}
@@ -208,7 +210,7 @@ export default function OrderCard({
           <div className="flex items-center gap-1 mr-2">
             <button
               onClick={handleCopy}
-              className="p-2 rounded-full hover:bg-slate-100 text-slate-500 transition-colors"
+              className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
               title="Copiar detalles"
             >
               <Copy className="h-4 w-4" />
@@ -219,7 +221,7 @@ export default function OrderCard({
                   e.stopPropagation();
                   onEdit(id);
                 }}
-                className="p-2 rounded-full hover:bg-slate-100 text-slate-500 transition-colors"
+                className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
               >
                 <Pencil className="h-4 w-4" />
               </button>

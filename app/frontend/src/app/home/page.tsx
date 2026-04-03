@@ -4,13 +4,14 @@ import {
   ClipboardList,
   Package,
   ShoppingBag,
+  TrendingUp,
   Users,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { toast } from "sonner";
 
-import { Card } from "@/components/ui/Card/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { getOrders } from "@/features/orders/api/get-orders";
 import { getRevenue } from "@/features/revenue/api/get-revenue";
 import { cn } from "@/lib/utils";
@@ -23,32 +24,32 @@ const DASHBOARD_ITEMS = [
     description: "Gestionar pedidos de clientes",
     icon: ShoppingBag,
     href: "/order",
-    color: "text-rose-600",
-    bgColor: "bg-rose-50 border-rose-100",
+    color: "text-destructive",
+    bgColor: "bg-destructive/10",
   },
   {
     title: "Clientes",
     description: "Directorio de locales y rutas",
     icon: Users,
     href: "/client",
-    color: "text-amber-600",
-    bgColor: "bg-amber-50 border-amber-100",
+    color: "text-warning",
+    bgColor: "bg-warning/10",
   },
   {
     title: "Compras",
     description: "Órdenes a proveedores",
     icon: Package,
     href: "/purchase-order",
-    color: "text-indigo-600",
-    bgColor: "bg-indigo-50 border-indigo-100",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
   },
   {
     title: "Estadísticas",
     description: "Reportes de ingresos y KPIs",
     icon: BarChart3,
     href: "/stats",
-    color: "text-emerald-600",
-    bgColor: "bg-emerald-50 border-emerald-100",
+    color: "text-success",
+    bgColor: "bg-success/10",
   },
 ];
 
@@ -88,22 +89,19 @@ export default function Home() {
   const currentMonthRevenue =
     revenueData?.revenue
       .filter((r) => r.day.startsWith(currentMonth))
-      .reduce((sum, r) => sum + Number(r.totalGain), 0) ?? 0;
+      .reduce((sum, r) => sum + r.revenue, 0) ?? 0;
 
-  // Simple growth calculation logic could be added here if we had historical context easily available
-  // For now, we'll leave it as a placeholder or remove it.
-  // Let's just show a positive message.
   const growth = "🚀";
 
   return (
-    <div className="min-h-screen bg-slate-50/50 pb-12">
+    <div className="min-h-screen bg-background pb-12">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pt-8 sm:px-6">
         {/* WELCOME SECTION */}
         <div className="space-y-1">
-          <h2 className="text-3xl font-black tracking-tight text-slate-900">
+          <h2 className="text-3xl font-bold tracking-tight text-foreground">
             Panel de Control
           </h2>
-          <p className="text-slate-500 font-medium">
+          <p className="text-muted-foreground font-medium">
             Bienvenido a Vasvani App. ¿Qué quieres hacer hoy?
           </p>
         </div>
@@ -115,68 +113,85 @@ export default function Home() {
               key={item.title}
               onClick={() => navigate(item.href)}
               className={cn(
-                "group relative cursor-pointer overflow-hidden rounded-[2rem] border-0 p-6 transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/50 active:scale-[0.98]",
-                "bg-white ring-1 ring-slate-100",
+                "group cursor-pointer overflow-hidden rounded-3xl border border-border bg-card transition-all duration-300 hover:shadow-lg hover:bg-accent/5 active:scale-[0.98]",
               )}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-5">
-                  <div
-                    className={cn(
-                      "flex h-14 w-14 items-center justify-center rounded-2xl border transition-all duration-300 group-hover:scale-110",
-                      item.bgColor,
-                    )}
-                  >
-                    <item.icon className={cn("h-7 w-7", item.color)} />
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-5">
+                    <div
+                      className={cn(
+                        "flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-300 group-hover:scale-110",
+                        item.bgColor,
+                      )}
+                    >
+                      <item.icon className={cn("h-7 w-7", item.color)} />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="text-lg font-bold text-card-foreground">
+                        {item.title}
+                      </h3>
+                      <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground/70 transition-colors">
+                        {item.description}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 text-left">
-                      {item.title}
-                    </h3>
-                    <p className="text-sm font-medium text-slate-400 group-hover:text-slate-500 transition-colors">
-                      {item.description}
-                    </p>
-                  </div>
-                </div>
 
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-all duration-300">
-                  <ChevronRight className="h-5 w-5" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/50 text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                    <ChevronRight className="h-5 w-5" />
+                  </div>
                 </div>
-              </div>
+              </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* SECCIÓN RESUMEN RÁPIDO */}
-        <div className="rounded-[2.5rem] bg-indigo-600 p-8 text-white shadow-2xl shadow-indigo-200 transition-transform hover:scale-[1.01]">
-          <div className="flex items-center gap-3 opacity-80 mb-6">
-            <ClipboardList className="h-5 w-5" />
-            <span className="text-xs font-black uppercase tracking-[0.2em]">
-              Estado del Negocio
-            </span>
-          </div>
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
-            <div className="space-y-1 text-center sm:text-left">
-              <span className="block text-4xl font-black">{ordersToday}</span>
-              <span className="text-sm font-bold text-indigo-100/70 uppercase tracking-wider">
-                Pedidos Hoy
-              </span>
-            </div>
-            <div className="space-y-1 text-center sm:text-left border-y border-white/10 py-6 sm:border-y-0 sm:border-x sm:px-8 sm:py-0">
-              <span className="block text-4xl font-black">
+        {/* SECCIÓN RESUMEN RÁPIDO - Standard Shadcn Grid */}
+        <div className="grid gap-6 sm:grid-cols-3">
+          <Card className="rounded-[2rem] border border-border bg-card shadow-sm transition-all hover:shadow-md">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 opacity-60 mb-4 font-bold text-[10px] uppercase tracking-widest text-muted-foreground">
+                <ClipboardList className="h-4 w-4" />
+                <span>Pedidos Hoy</span>
+              </div>
+              <div className="text-3xl font-black text-foreground">
+                {ordersToday}
+              </div>
+              <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                Despachos del día
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-[2rem] border border-border bg-card shadow-sm transition-all hover:shadow-md">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 opacity-60 mb-4 font-bold text-[10px] uppercase tracking-widest text-muted-foreground">
+                <BarChart3 className="h-4 w-4" />
+                <span>Ventas Mes</span>
+              </div>
+              <div className="text-3xl font-black text-foreground">
                 {formatChileanPeso(currentMonthRevenue)}
-              </span>
-              <span className="text-sm font-bold text-indigo-100/70 uppercase tracking-wider">
-                Ventas Mes
-              </span>
-            </div>
-            <div className="space-y-1 text-center sm:text-left">
-              <span className="block text-4xl font-black">{growth}</span>
-              <span className="text-sm font-bold text-indigo-100/70 uppercase tracking-wider">
-                Crecimiento
-              </span>
-            </div>
-          </div>
+              </div>
+              <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                Ingresos acumulados
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-[2rem] border border-border bg-card shadow-sm transition-all hover:shadow-md">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 opacity-60 mb-4 font-bold text-[10px] uppercase tracking-widest text-muted-foreground">
+                <TrendingUp className="h-4 w-4" />
+                <span>Crecimiento</span>
+              </div>
+              <div className="text-3xl font-black text-foreground">
+                {growth}
+              </div>
+              <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                Rendimiento actual
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
