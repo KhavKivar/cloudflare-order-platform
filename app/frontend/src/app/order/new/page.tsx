@@ -167,9 +167,13 @@ export default function OrdersPage() {
               "w-full rounded-2xl p-4 flex items-center justify-between border transition-all active:scale-[0.98] relative overflow-hidden text-left",
               selectClient
                 ? "border-crimson/40 bg-crimson/5"
-                : "border-border/50 bg-card/50 hover:border-border",
+                : "border-crimson/30 bg-crimson/[0.04] hover:bg-crimson/[0.07] hover:border-crimson/50",
             )}
           >
+            {/* Glow ring when empty */}
+            {!selectClient && (
+              <div className="absolute inset-0 rounded-2xl ring-1 ring-crimson/20 animate-pulse pointer-events-none" />
+            )}
             {selectClient && (
               <div className="absolute inset-0 bg-crimson/5 pointer-events-none" />
             )}
@@ -178,7 +182,7 @@ export default function OrdersPage() {
                 "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border",
                 selectClient
                   ? "bg-background border-crimson/30 text-crimson"
-                  : "bg-muted border-border/40 text-muted-foreground",
+                  : "bg-crimson/10 border-crimson/20 text-crimson",
               )}>
                 <Store className="size-5" />
               </div>
@@ -193,15 +197,20 @@ export default function OrdersPage() {
                     </p>
                   </>
                 ) : (
-                  <p className="font-bold text-muted-foreground">
-                    Seleccionar cliente...
-                  </p>
+                  <>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-crimson/60 mb-0.5">
+                      Paso 1 — Requerido
+                    </p>
+                    <p className="font-bold text-foreground/70">
+                      Seleccionar cliente...
+                    </p>
+                  </>
                 )}
               </div>
             </div>
             <div className={cn(
               "flex h-8 w-8 shrink-0 items-center justify-center rounded-full ml-2 relative z-10",
-              selectClient ? "bg-crimson/20 text-crimson" : "bg-muted/60 text-muted-foreground/50",
+              selectClient ? "bg-crimson/20 text-crimson" : "bg-crimson/15 text-crimson",
             )}>
               <Plus className={cn("size-3.5", selectClient && "rotate-45")} />
             </div>
