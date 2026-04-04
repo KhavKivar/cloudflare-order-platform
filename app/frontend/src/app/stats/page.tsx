@@ -232,9 +232,14 @@ export default function StatsPage() {
                 </h3>
                 {weeklyGains.map((week, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <span className="text-[10px] font-black text-muted-foreground/50 w-6 shrink-0">
-                      S{i + 1}
-                    </span>
+                    <div className="w-[72px] shrink-0 flex flex-col">
+                      <span className="text-[10px] font-black text-muted-foreground/50 leading-tight">
+                        S{i + 1}
+                      </span>
+                      <span className="text-[9px] text-muted-foreground/30 leading-tight">
+                        {week.label}
+                      </span>
+                    </div>
                     <div className="flex-1 h-2.5 rounded-full bg-muted/60 overflow-hidden">
                       <div
                         className={cn(

@@ -2,8 +2,11 @@ import {
   ArrowUpRight,
   BarChart3,
   ClipboardList,
+  Package,
   Package2,
+  ShoppingBag,
   TrendingUp,
+  Users,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
@@ -104,10 +107,7 @@ export default function Home() {
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 px-4 pt-6 pb-4 sm:gap-8 sm:px-6 sm:pt-10">
 
         {/* HERO — Ventas del Mes */}
-        <div
-          className="animate-in fade-in slide-in-from-bottom-3 duration-500"
-          style={{ animationDelay: "60ms" }}
-        >
+        <div>
           <Card className="relative overflow-hidden rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm">
             <div className="absolute inset-0 bg-gradient-to-br from-crimson/8 via-transparent to-transparent pointer-events-none" />
             <CardContent className="p-5 sm:p-7">
@@ -144,10 +144,7 @@ export default function Home() {
         </div>
 
         {/* SECONDARY STATS — 2 col */}
-        <div
-          className="animate-in fade-in slide-in-from-bottom-3 duration-500 grid grid-cols-2 gap-3"
-          style={{ animationDelay: "120ms" }}
-        >
+        <div className="grid grid-cols-2 gap-3">
           <Card className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm group hover:border-crimson/30 transition-colors">
             <CardContent className="p-4 sm:p-5">
               <div className="flex items-center gap-1.5 mb-3 text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/60 group-hover:text-crimson/70 transition-colors">
@@ -179,12 +176,73 @@ export default function Home() {
           </Card>
         </div>
 
+        {/* NAVIGATION CARDS */}
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            {
+              href: "/order",
+              icon: ShoppingBag,
+              label: "Ventas",
+              description: "Crear & cobrar",
+              iconClass: "text-crimson",
+              bgClass: "bg-crimson/10 border-crimson/20",
+              hoverClass: "hover:border-crimson/30",
+            },
+            {
+              href: "/purchase-order",
+              icon: Package,
+              label: "Compras",
+              description: "Proveedores",
+              iconClass: "text-amber-500",
+              bgClass: "bg-amber-500/10 border-amber-500/20",
+              hoverClass: "hover:border-amber-500/30",
+            },
+            {
+              href: "/client",
+              icon: Users,
+              label: "Clientes",
+              description: "Cuentas corrientes",
+              iconClass: "text-blue-400",
+              bgClass: "bg-blue-500/10 border-blue-500/20",
+              hoverClass: "hover:border-blue-500/30",
+            },
+            {
+              href: "/stats",
+              icon: BarChart3,
+              label: "Estadísticas",
+              description: "Reportes globales",
+              iconClass: "text-purple-400",
+              bgClass: "bg-purple-500/10 border-purple-500/20",
+              hoverClass: "hover:border-purple-500/30",
+            },
+          ].map((item) => (
+            <button
+              key={item.href}
+              onClick={() => navigate(item.href)}
+              className={cn(
+                "relative text-left rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm p-4 h-[110px] flex flex-col justify-between transition-colors group",
+                item.hoverClass,
+              )}
+            >
+              <div
+                className={cn(
+                  "flex h-10 w-10 items-center justify-center rounded-xl border",
+                  item.bgClass,
+                )}
+              >
+                <item.icon className={cn("h-5 w-5", item.iconClass)} />
+              </div>
+              <div>
+                <p className="font-bold text-sm text-foreground leading-tight">{item.label}</p>
+                <p className="text-[11px] text-muted-foreground/50 font-medium mt-0.5">{item.description}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+
         {/* RECENT ORDERS */}
         {recentOrders.length > 0 && (
-          <div
-            className="animate-in fade-in slide-in-from-bottom-4 duration-500"
-            style={{ animationDelay: "180ms" }}
-          >
+          <div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-black uppercase tracking-[0.15em] text-muted-foreground/70">
                 Últimos pedidos
