@@ -8,8 +8,8 @@ export const CreateClientDtoSchema = z.object({
   phone: z
     .string()
     .regex(
-      /^(569\d{8}|9\d{8})$/,
-      "El teléfono debe ser un celular chileno válido (ej: 56912345678 o 912345678)",
+      /^9\d{8}$/,
+      "Ingresá solo los 9 dígitos (ej: 912345678)",
     ),
   phoneId: z.string().optional().default(""),
 });

@@ -34,8 +34,8 @@ export default function NewClientPage() {
   });
 
   const onSubmit: SubmitHandler<FormFields> = (data) => {
-    data.phoneId = data.phone;
-    mutate(data);
+    const phone = `56${data.phone}`;
+    mutate({ ...data, phone, phoneId: phone });
   };
 
   const localNameValue = watch("localName");
@@ -160,7 +160,7 @@ export default function NewClientPage() {
                 type="tel"
                 inputMode="tel"
                 maxLength={20}
-                placeholder="912345678 o 56912345678"
+                placeholder="912345678"
                 className={cn(
                   "w-full rounded-2xl border bg-muted/30 pl-[80px] pr-4 py-4 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30",
                   "outline-none transition-all duration-200",
@@ -178,7 +178,7 @@ export default function NewClientPage() {
               </p>
             ) : (
               <p className="mt-1.5 ml-1 text-[11px] text-muted-foreground/40">
-                Formato corto: 912345678 · Completo: 56912345678
+                9 dígitos sin el prefijo +56
               </p>
             )}
           </div>
