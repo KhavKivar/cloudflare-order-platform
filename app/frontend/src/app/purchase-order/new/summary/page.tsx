@@ -1,9 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
 import {
-  CheckCircle2,
   ChevronRight,
-  Clock,
   Info,
+  Loader2,
+  Package,
   PackageSearch,
   ShoppingBag,
 } from "lucide-react";
@@ -17,9 +17,9 @@ import {
   selectedPurchaseOrder,
 } from "@/app/purchaseOrderSlice";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createPurchaseOrder } from "@/features/purchase-orders/api/create-purchase-orders";
 import { useAppSelector } from "@/hooks/redux.hooks";
+import { cn } from "@/lib/utils";
 import { formatChileanPeso } from "@/utils/format-currency";
 
 type PurchaseItem = {
@@ -78,181 +78,179 @@ export default function PurchaseOrderSummaryPage() {
   );
 
   const handleCreatePurchaseOrder = () => {
-    if (purchaseItems.length === 0 || purchaseOrderMutation.isPending) {
-      return;
-    }
-
+    if (purchaseItems.length === 0 || purchaseOrderMutation.isPending) return;
     purchaseOrderMutation.mutate({
       orderListIds: selectedOrders.map((order) => order.orderId),
     });
   };
 
   return (
-    <div className="space-y-8 pb-44 sm:pb-10">
-      <div className="flex flex-col gap-4">
-        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
-          Confirmar Orden
-        </h1>
-        <p className="text-muted-foreground font-medium">
-          Revisa el consolidado de productos antes de generar la orden de
-          compra.
-        </p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto w-full max-w-lg px-4 pt-5 pb-36 flex flex-col gap-4">
 
-      <div className="grid gap-8 lg:grid-cols-12 lg:items-start">
-        {/* COLUMNA IZQUIERDA: CONSOLIDADO */}
-        <section className="space-y-6 lg:col-span-7">
-          <Card className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
-            <CardHeader className="border-b border-border bg-muted/50 px-6 py-4">
-              <div className="flex items-center gap-2">
-                <ShoppingBag className="size-5 text-primary" />
-                <CardTitle className="text-lg font-bold text-foreground">
-                  Consolidado de Productos
-                </CardTitle>
-              </div>
-            </CardHeader>
-
-            <CardContent className="p-0">
-                  {purchaseItems.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                      <PackageSearch className="size-10 opacity-20" />
-                      <p className="mt-2 text-sm">No hay productos consolidados.</p>
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-border">
-                      {purchaseItems.map((item) => (
-                        <div
-                          key={item.productId}
-                          className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-muted/50"
-                        >
-                          <div className="flex flex-col gap-0.5">
-                            <p className="font-semibold text-foreground">
-                              {item.name}
-                            </p>
-                            <p className="text-xs text-muted-foreground font-medium">
-                              {item.quantity} unidades ×{" "}
-                              {formatChileanPeso(item.pricePerUnit)}
-                            </p>
-                          </div>
-                          <span className="font-bold text-foreground">
-                            {formatChileanPeso(item.pricePerUnit * item.quantity)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-            </CardContent>
-
-            <div className="bg-muted/30 px-6 py-6 border-t border-border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Total Estimado
-                  </p>
-                  <p className="text-2xl font-bold text-primary">
-                    {formatChileanPeso(total)}
-                  </p>
-                </div>
-                <Button
-                  onClick={handleCreatePurchaseOrder}
-                  disabled={
-                    purchaseItems.length === 0 ||
-                    purchaseOrderMutation.isPending
-                  }
-                  className="hidden sm:flex px-8 h-12 rounded-2xl shadow-lg shadow-primary/10"
-                >
-                  {purchaseOrderMutation.isPending
-                    ? "Generando..."
-                    : "Crear Orden de Compra"}
-                  {!purchaseOrderMutation.isPending && (
-                    <ChevronRight className="ml-2 size-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-          </Card>
-
-          <div className="flex items-start gap-3 rounded-2xl bg-primary/5 p-4 border border-primary/10">
-            <Info className="size-5 text-primary mt-0.5 shrink-0" />
-            <p className="text-sm text-primary leading-relaxed font-medium">
-              Esta orden consolidará todos los productos de los pedidos
-              seleccionados en una única lista para facilitar la compra al
-              proveedor.
+        {/* HEADER */}
+        <header className="flex items-center gap-3 mb-2">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10 border border-amber-500/20">
+            <Package className="h-5 w-5 text-amber-400" />
+          </div>
+          <div>
+            <h1 className="text-xl font-black tracking-tight text-foreground leading-none">
+              Confirmar Orden
+            </h1>
+            <p className="text-xs text-muted-foreground/60 mt-0.5">
+              Revisá el consolidado antes de generar
             </p>
           </div>
-        </section>
+        </header>
 
-        {/* COLUMNA DERECHA: PEDIDOS FUENTE */}
-        <section className="space-y-4 lg:col-span-5">
-          <h3 className="flex items-center gap-2 px-1 text-sm font-bold uppercase tracking-wider text-muted-foreground">
-            <Clock className="size-4" />
+        {/* CONSOLIDATED PRODUCTS CARD */}
+        <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-4 border-b border-border/30">
+            <ShoppingBag className="h-4 w-4 text-amber-400" />
+            <h3 className="text-sm font-black text-foreground/80">
+              Consolidado de Productos
+            </h3>
+          </div>
+
+          {purchaseItems.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/30">
+              <PackageSearch className="size-8 mb-2" />
+              <p className="text-sm font-bold">Sin productos consolidados</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border/20">
+              {purchaseItems.map((item) => (
+                <div
+                  key={item.productId}
+                  className="flex items-center justify-between px-5 py-3.5"
+                >
+                  <div className="flex flex-col gap-0.5 flex-1 min-w-0 pr-4">
+                    <p className="font-bold text-sm text-foreground truncate">
+                      {item.name}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground/50 font-mono">
+                      {item.quantity} unidades × {formatChileanPeso(item.pricePerUnit)}
+                    </p>
+                  </div>
+                  <span className="font-black text-sm text-foreground shrink-0">
+                    {formatChileanPeso(item.pricePerUnit * item.quantity)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="px-5 py-4 border-t border-border/30 bg-muted/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">
+                  Total Estimado
+                </p>
+                <p className="text-2xl font-black text-foreground tracking-tighter mt-0.5">
+                  {formatChileanPeso(total)}
+                </p>
+              </div>
+              <span className="text-xs font-bold text-muted-foreground/40">
+                {purchaseItems.length} {purchaseItems.length === 1 ? "producto" : "productos"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* INFO BANNER */}
+        <div className="flex items-start gap-3 rounded-xl border border-blue-500/15 bg-blue-500/5 p-4">
+          <Info className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
+          <p className="text-xs text-blue-400/80 leading-relaxed font-medium">
+            Esta orden consolidará todos los productos de los pedidos seleccionados
+            en una única lista para facilitar la compra al proveedor.
+          </p>
+        </div>
+
+        {/* SOURCE ORDERS */}
+        <section className="flex flex-col gap-2">
+          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
             Pedidos Seleccionados ({selectedOrders.length})
           </h3>
-          <div className="grid gap-4">
-            {selectedOrders.map((order) => (
-              <Card
+
+          {selectedOrders.map((order) => {
+            const orderTotal = order.lines.reduce(
+              (sum, line) => sum + line.pricePerUnit * line.quantity,
+              0,
+            );
+            return (
+              <div
                 key={order.orderId}
-                className="group overflow-hidden rounded-2xl border-border bg-background/70 p-4 shadow-none transition-all hover:bg-card hover:shadow-md"
+                className="rounded-xl border border-border/40 bg-card/30 p-4"
               >
-                <div className="flex items-center justify-between border-b border-border/50 pb-3 mb-3">
+                <div className="flex items-center justify-between mb-2.5">
                   <div>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">
                       Pedido #{order.orderId}
-                    </span>
-                    <h4 className="font-bold text-foreground">
+                    </p>
+                    <p className="font-bold text-sm text-foreground">
                       {order.localName || "Local"}
-                    </h4>
+                    </p>
                   </div>
-                  <CheckCircle2 className="size-5 text-success" />
+                  <span className="font-black text-sm text-foreground">
+                    {formatChileanPeso(orderTotal)}
+                  </span>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className={cn(
+                  "rounded-lg bg-muted/30 border border-border/20 px-3 py-1.5",
+                  "divide-y divide-border/15",
+                )}>
                   {order.lines.slice(0, 2).map((line) => (
                     <div
                       key={line.lineId}
-                      className="flex items-center justify-between text-xs"
+                      className="flex items-center justify-between py-1.5 text-xs"
                     >
-                      <span className="text-muted-foreground">
+                      <span className="text-muted-foreground/60 truncate flex-1 pr-3">
                         {line.quantity}x {line.productName}
                       </span>
-                      <span className="font-medium text-foreground">
+                      <span className="font-bold text-foreground/80 shrink-0">
                         {formatChileanPeso(line.pricePerUnit * line.quantity)}
                       </span>
                     </div>
                   ))}
                   {order.lines.length > 2 && (
-                    <p className="text-[10px] italic text-muted-foreground font-medium">
+                    <p className="py-1.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground/30">
                       + {order.lines.length - 2} productos adicionales
                     </p>
                   )}
                 </div>
-              </Card>
-            ))}
-          </div>
+              </div>
+            );
+          })}
         </section>
       </div>
 
-      {/* STICKY BOTTOM BAR FOR MOBILE */}
-      <div className="fixed bottom-16 left-0 right-0 z-40 border-t border-border bg-background/90 p-4 backdrop-blur-xl sm:hidden">
+      {/* STICKY BOTTOM BAR */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-6 pt-10 bg-gradient-to-t from-background via-background/95 to-transparent">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-4">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+          <div className="flex flex-col shrink-0">
+            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/50">
               Total Estimado
             </span>
-            <span className="text-xl font-bold text-primary">
+            <span className="text-xl font-black text-foreground leading-tight tracking-tighter">
               {formatChileanPeso(total)}
             </span>
           </div>
           <Button
             onClick={handleCreatePurchaseOrder}
-            disabled={
-              purchaseItems.length === 0 || purchaseOrderMutation.isPending
-            }
-            className="flex-1 h-12 shadow-lg shadow-primary/10 rounded-xl"
+            disabled={purchaseItems.length === 0 || purchaseOrderMutation.isPending}
+            className="flex-1 h-12 rounded-xl bg-crimson hover:bg-crimson/90 text-white font-bold shadow-lg shadow-crimson/20 disabled:opacity-40"
           >
-            {purchaseOrderMutation.isPending ? "Generando..." : "Generar Orden"}
-            {!purchaseOrderMutation.isPending && (
-              <ChevronRight className="ml-2 size-4" />
+            {purchaseOrderMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generando...
+              </>
+            ) : (
+              <>
+                Generar Orden
+                <ChevronRight className="ml-1.5 h-4 w-4" />
+              </>
             )}
           </Button>
         </div>
