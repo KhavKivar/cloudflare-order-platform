@@ -1,11 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart";
 import { getRevenue } from "@/features/revenue/api/get-revenue";
 import type { Revenue } from "@/features/revenue/api/revenue-schema";
 import { cn } from "@/lib/utils";
@@ -15,49 +8,22 @@ import {
   AlertCircle,
   BarChart3,
   Calendar,
+  Crown,
   DollarSign,
   TrendingUp,
+  Zap,
 } from "lucide-react";
 import { useMemo } from "react";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
-// --- Tipos y Constantes ---
+// --- Types & Helpers ---
 
-type WeeklyGain = {
-  label: string;
-  gain: number;
-  start: Date;
-};
-
-type DailyGain = {
-  label: string;
-  gain: number;
-  date: Date;
-};
-
-const chartConfig = {
-  gain: {
-    label: "Ganancias",
-    color: "#f97316", // Orange-500
-  },
-} satisfies ChartConfig;
+type WeeklyGain = { label: string; gain: number; start: Date };
+type DailyGain = { label: string; gain: number; date: Date };
 
 const MONTHS_SHORT = [
-  "Ene",
-  "Feb",
-  "Mar",
-  "Abr",
-  "May",
-  "Jun",
-  "Jul",
-  "Ago",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dic",
+  "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+  "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
 ];
-
-// --- Helpers de Fecha y Datos ---
 
 const parseRevenueDate = (value: string) => {
   const [year, month, day] = value.split("-").map(Number);
@@ -71,7 +37,7 @@ const formatShortDate = (date: Date) =>
 const getWeekStart = (date: Date) => {
   const d = new Date(date);
   const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day; // Ajustar al Lunes
+  const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
   return d;
@@ -83,11 +49,8 @@ const normalizeRevenue = (entries: Revenue[]) => {
   entries.forEach((entry) => {
     const date = parseRevenueDate(entry.day);
     if (!date) return;
-
-    // Key única YYYY-MM-DD para agrupar mismo día si fuera necesario
     const key = date.toISOString().split("T")[0];
     const gain = entry.revenue || 0;
-
     const existing = dailyMap.get(key);
     if (existing) {
       existing.gain += gain;
@@ -96,31 +59,24 @@ const normalizeRevenue = (entries: Revenue[]) => {
     }
   });
 
-  // Ordenar días: más reciente primero
   const dailyGains = Array.from(dailyMap.values()).sort(
     (a, b) => b.date.getTime() - a.date.getTime(),
   );
 
-  // Agrupar por semanas
   const weeklyMap = new Map<number, WeeklyGain>();
-
-  // Para el gráfico, queremos orden cronológico (antiguo -> nuevo), así que invertimos temporalmente
   const chronologicalDays = [...dailyGains].reverse();
 
   chronologicalDays.forEach((entry) => {
     const weekStart = getWeekStart(entry.date);
     const weekKey = weekStart.getTime();
-
     const existing = weeklyMap.get(weekKey);
     if (existing) {
       existing.gain += entry.gain;
     } else {
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekStart.getDate() + 6);
-      const label = `${formatShortDate(weekStart)} - ${formatShortDate(weekEnd)}`;
-
       weeklyMap.set(weekKey, {
-        label,
+        label: `${formatShortDate(weekStart)} - ${formatShortDate(weekEnd)}`,
         gain: entry.gain,
         start: weekStart,
       });
@@ -131,23 +87,17 @@ const normalizeRevenue = (entries: Revenue[]) => {
     (a, b) => a.start.getTime() - b.start.getTime(),
   );
 
-  // Calcular KPIs
   const totalRevenue = dailyGains.reduce((acc, curr) => acc + curr.gain, 0);
   const bestDay = dailyGains.reduce(
     (max, curr) => (curr.gain > max.gain ? curr : max),
-    { gain: 0, label: "-" },
+    { gain: 0, label: "-" } as DailyGain,
   );
-  const averageDaily =
-    dailyGains.length > 0 ? totalRevenue / dailyGains.length : 0;
+  const averageDaily = dailyGains.length > 0 ? totalRevenue / dailyGains.length : 0;
 
-  return {
-    dailyGains,
-    weeklyGains,
-    kpis: { totalRevenue, bestDay, averageDaily },
-  };
+  return { dailyGains, weeklyGains, kpis: { totalRevenue, bestDay, averageDaily } };
 };
 
-// --- Componente Principal ---
+// --- Main Component ---
 
 export default function StatsPage() {
   const { data, isPending, error } = useQuery({
@@ -165,15 +115,13 @@ export default function StatsPage() {
   if (error) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center gap-6 px-6 text-center">
-        <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-destructive/10 text-destructive shadow-inner">
-          <AlertCircle className="h-10 w-10" />
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+          <AlertCircle className="h-8 w-8" />
         </div>
         <div className="max-w-xs">
-          <h3 className="text-xl font-black text-foreground">
-            Error de Conexión
-          </h3>
-          <p className="mt-2 font-medium text-muted-foreground">
-            No pudimos sincronizar los datos financieros en este momento.
+          <h3 className="text-lg font-black text-foreground">Error de Conexión</h3>
+          <p className="mt-1 text-sm font-medium text-muted-foreground">
+            No pudimos sincronizar los datos financieros.
           </p>
         </div>
         <Button
@@ -187,155 +135,159 @@ export default function StatsPage() {
     );
   }
 
+  const maxWeeklyGain = Math.max(...weeklyGains.map((w) => w.gain), 1);
+
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-4 pt-8 sm:px-6">
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 pt-6 pb-8 sm:px-6">
+
         {/* HEADER */}
-        <header className="flex flex-col gap-2">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-200">
-              <BarChart3 className="size-6" />
-            </div>
-            <h1 className="text-3xl font-black tracking-tight text-foreground">
-              Métricas de Negocio
-            </h1>
+        <header className="flex items-center gap-3 mb-1">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/20">
+            <TrendingUp className="h-5 w-5 text-emerald-400" />
           </div>
-          <p className="text-muted-foreground font-medium ml-1">
-            Análisis de rentabilidad y rendimiento de ventas.
-          </p>
+          <div>
+            <h1 className="text-xl font-black tracking-tight text-foreground leading-none">
+              Métricas
+            </h1>
+            <p className="text-xs font-medium text-muted-foreground/60 mt-0.5">
+              Desempeño mensual
+            </p>
+          </div>
         </header>
 
         {dailyGains.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-[3rem] border-2 border-dashed border-slate-200 bg-white/50 p-20 text-center">
-            <div className="bg-muted p-6 rounded-full mb-6">
-              <BarChart3 className="h-10 w-10 text-muted-foreground/50" />
+          <div className="flex flex-col items-center justify-center py-16 px-6 text-center border border-dashed border-border/40 rounded-2xl mt-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/40 mb-4">
+              <BarChart3 className="h-7 w-7 text-muted-foreground/40" />
             </div>
-            <h3 className="text-2xl font-black text-foreground">
-              Sin estadísticas
-            </h3>
-            <p className="mt-2 text-muted-foreground font-medium max-w-xs mx-auto">
-              Comienza a registrar ventas en la sección de pedidos para generar
-              reportes.
+            <h3 className="text-lg font-black text-foreground">Sin estadísticas</h3>
+            <p className="text-sm text-muted-foreground/60 mt-1">
+              Registrá ventas en la sección de pedidos para generar reportes.
             </p>
           </div>
         ) : (
           <>
-            {/* KPI CARDS - Premium Style */}
-            <div className="grid gap-6 sm:grid-cols-3">
-              <KpiCard
-                title="Ganancia Total"
-                value={formatChileanPeso(kpis.totalRevenue)}
-                icon={DollarSign}
-                subtitle="Ingresos acumulados"
-                variant="indigo"
-              />
-              <KpiCard
-                title="Récord Diario"
-                value={formatChileanPeso(kpis.bestDay.gain)}
-                subtitle={kpis.bestDay.label}
-                icon={TrendingUp}
-                variant="emerald"
-              />
-              <KpiCard
-                title="Promedio"
-                value={formatChileanPeso(kpis.averageDaily)}
-                icon={BarChart3}
-                subtitle="Por jornada laboral"
-                variant="amber"
-              />
+            {/* KPI CARDS */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Total — full width */}
+              <div className="col-span-2 relative overflow-hidden rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm p-5">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-crimson/10 rounded-full blur-2xl -mr-8 -mt-8 pointer-events-none" />
+                <div className="flex items-start justify-between mb-1">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
+                    Ingreso Total
+                  </span>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-crimson/10 border border-crimson/20">
+                    <DollarSign className="h-3.5 w-3.5 text-crimson" />
+                  </div>
+                </div>
+                <div className="text-3xl font-black text-foreground tracking-tighter">
+                  {formatChileanPeso(kpis.totalRevenue)}
+                </div>
+              </div>
+
+              {/* Best Day */}
+              <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm p-4 border-t-2 border-t-emerald-500/40">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/60">
+                    Mejor Día
+                  </span>
+                  <Crown className="h-3.5 w-3.5 text-emerald-400" />
+                </div>
+                <div className="text-xl font-black text-foreground">
+                  {formatChileanPeso(kpis.bestDay.gain)}
+                </div>
+                <div className="text-[11px] text-muted-foreground/50 mt-0.5 font-medium">
+                  {kpis.bestDay.label !== "-"
+                    ? parseRevenueDate(kpis.bestDay.label)?.toLocaleDateString("es-CL", {
+                        day: "numeric",
+                        month: "short",
+                      }) ?? kpis.bestDay.label
+                    : "-"}
+                </div>
+              </div>
+
+              {/* Average */}
+              <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm p-4 border-t-2 border-t-amber-500/40">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/60">
+                    Promedio
+                  </span>
+                  <Zap className="h-3.5 w-3.5 text-amber-400" />
+                </div>
+                <div className="text-xl font-black text-foreground">
+                  {formatChileanPeso(Math.round(kpis.averageDaily))}
+                </div>
+                <div className="text-[11px] text-muted-foreground/50 mt-0.5 font-medium">
+                  Por día
+                </div>
+              </div>
             </div>
 
-            {/* CHART SECTION - Modern & Floating */}
-            <section className="space-y-4">
-              <div className="flex items-center justify-between px-2">
-                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">
-                  Evolución Semanal
+            {/* WEEKLY BARS */}
+            {weeklyGains.length > 0 && (
+              <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm p-5 space-y-3">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-1">
+                  Ingresos Semanales
                 </h3>
-              </div>
-              <Card className="p-8 rounded-[2.5rem] border border-border bg-card shadow-sm shadow-slate-200/50 ring-1 ring-border">
-                <ChartContainer
-                  config={chartConfig}
-                  className="h-[320px] w-full"
-                >
-                  <BarChart
-                    data={weeklyGains}
-                    margin={{ top: 20, right: 0, left: 0, bottom: 0 }}
-                  >
-                    <CartesianGrid
-                      vertical={false}
-                      strokeDasharray="4 4"
-                      className="stroke-border"
-                    />
-                    <XAxis
-                      dataKey="label"
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={16}
-                      fontSize={11}
-                      fontWeight={700}
-                      tick={{ fill: "var(--color-muted-foreground)" }}
-                    />
-                    <YAxis hide />
-                    <ChartTooltip
-                      cursor={{ fill: "rgba(79, 70, 229, 0.05)", radius: 12 }}
-                      content={
-                        <ChartTooltipContent
-                          className="bg-secondary border-0 text-secondary-foreground shadow-2xl rounded-2xl p-4"
-                          formatter={(value) => (
-                            <span className="text-lg font-black text-white">
-                              {formatChileanPeso(Number(value))}
-                            </span>
-                          )}
-                        />
-                      }
-                    />
-                    <Bar
-                      dataKey="gain"
-                      fill="var(--color-gain)"
-                      radius={[12, 12, 4, 4]}
-                      maxBarSize={50}
-                    />
-                  </BarChart>
-                </ChartContainer>
-              </Card>
-            </section>
-
-            {/* LISTA DETALLADA - Clean Feed */}
-            <section className="space-y-4">
-              <div className="flex items-center justify-between px-2">
-                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">
-                  Desglose por Jornada
-                </h3>
-              </div>
-              <div className="grid gap-3">
-                {dailyGains.map((entry) => (
-                  <Card
-                    key={entry.label}
-                    className="flex items-center justify-between px-6 py-5 rounded-2xl border border-border bg-card transition-all hover:ring-2 hover:ring-indigo-100/50 active:scale-[0.99]"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                        <Calendar className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-foreground capitalize leading-none">
-                          {entry.date.toLocaleDateString("es-CL", {
-                            weekday: "long",
-                            day: "numeric",
-                            month: "long",
-                          })}
-                        </p>
-                        <p className="mt-1.5 text-xs font-black uppercase tracking-widest text-muted-foreground">
-                          Operación diaria
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-xl font-black tracking-tight text-foreground">
-                      {formatChileanPeso(entry.gain)}
+                {weeklyGains.map((week, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <span className="text-[10px] font-black text-muted-foreground/50 w-6 shrink-0">
+                      S{i + 1}
                     </span>
-                  </Card>
+                    <div className="flex-1 h-2.5 rounded-full bg-muted/60 overflow-hidden">
+                      <div
+                        className={cn(
+                          "h-full rounded-full transition-all duration-500",
+                          week.gain === Math.max(...weeklyGains.map((w) => w.gain))
+                            ? "bg-gradient-to-r from-crimson to-orange-500"
+                            : "bg-gradient-to-r from-crimson/70 to-orange-500/70",
+                        )}
+                        style={{ width: `${(week.gain / maxWeeklyGain) * 100}%` }}
+                      />
+                    </div>
+                    <span
+                      className={cn(
+                        "text-xs w-20 text-right shrink-0 font-bold",
+                        week.gain === Math.max(...weeklyGains.map((w) => w.gain))
+                          ? "text-foreground font-black"
+                          : "text-muted-foreground/70",
+                      )}
+                    >
+                      {formatChileanPeso(week.gain)}
+                    </span>
+                  </div>
                 ))}
               </div>
+            )}
+
+            {/* DAILY LIST */}
+            <section className="space-y-2">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                Desglose por Jornada
+              </h3>
+              {dailyGains.map((entry) => (
+                <div
+                  key={entry.label}
+                  className="flex items-center justify-between px-4 py-3 rounded-xl border border-border/40 bg-card/30 hover:bg-card/60 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/40 text-muted-foreground/50">
+                      <Calendar className="h-4 w-4" />
+                    </div>
+                    <span className="text-sm font-bold text-foreground capitalize">
+                      {entry.date.toLocaleDateString("es-CL", {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                      })}
+                    </span>
+                  </div>
+                  <span className="text-sm font-black text-foreground tracking-tight">
+                    +{formatChileanPeso(entry.gain)}
+                  </span>
+                </div>
+              ))}
             </section>
           </>
         )}
@@ -344,84 +296,20 @@ export default function StatsPage() {
   );
 }
 
-// --- Sub-componentes Visuales ---
-
-type KpiCardProps = {
-  title: string;
-  value: string;
-  subtitle?: string;
-  icon: React.ElementType;
-  variant: "indigo" | "emerald" | "amber";
-};
-
-const VARIANT_STYLES = {
-  indigo: {
-    bg: "bg-primary/10",
-    text: "text-primary",
-    ring: "hover:ring-primary/10",
-  },
-  emerald: {
-    bg: "bg-success/10",
-    text: "text-success",
-    ring: "hover:ring-success/10",
-  },
-  amber: {
-    bg: "bg-warning/10",
-    text: "text-warning",
-    ring: "hover:ring-warning/10",
-  },
-};
-
-function KpiCard({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  variant,
-}: KpiCardProps) {
-  const styles = VARIANT_STYLES[variant];
-
-  return (
-    <Card
-      className={cn(
-        "relative overflow-hidden p-6 rounded-[2rem] border-0 bg-card shadow-sm ring-1 ring-border transition-all hover:shadow-xl",
-        styles.ring,
-      )}
-    >
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
-            {title}
-          </p>
-          <div className="text-2xl font-black text-foreground">{value}</div>
-          {subtitle && (
-            <p className="text-xs font-bold text-muted-foreground/80">{subtitle}</p>
-          )}
-        </div>
-        <div
-          className={cn("rounded-2xl p-3 shadow-inner", styles.bg, styles.text)}
-        >
-          <Icon className="h-6 w-6" />
-        </div>
-      </div>
-    </Card>
-  );
-}
-
 function StatsSkeleton() {
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 pb-12 pt-8 sm:pt-12 lg:pt-16 animate-pulse">
-        <div className="h-8 w-48 bg-slate-200 rounded-lg"></div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 bg-slate-200 rounded-3xl"></div>
-          ))}
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 pt-6 pb-8 sm:px-6 animate-pulse">
+        <div className="h-10 w-40 bg-muted/60 rounded-full" />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2 h-24 bg-muted/40 rounded-2xl" />
+          <div className="h-20 bg-muted/40 rounded-2xl" />
+          <div className="h-20 bg-muted/40 rounded-2xl" />
         </div>
-        <div className="h-[300px] bg-slate-200 rounded-3xl"></div>
+        <div className="h-40 bg-muted/40 rounded-2xl" />
         <div className="space-y-2">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-16 bg-slate-200 rounded-2xl"></div>
+            <div key={i} className="h-12 bg-muted/40 rounded-xl" />
           ))}
         </div>
       </div>

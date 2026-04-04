@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlertCircle,
   Calendar,
   ChevronRight,
   Copy,
@@ -8,14 +7,12 @@ import {
   Package,
   Plus,
   Receipt,
-  Store,
   Trash2,
 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogClose,
@@ -35,28 +32,33 @@ import {
 import { cn } from "@/lib/utils";
 import { formatChileanPeso } from "@/utils/format-currency";
 
-const STATUS_CONFIG: Record<string, { label: string; style: string }> = {
+const STATUS_CONFIG: Record<string, { label: string; style: string; topBorder: string }> = {
   pending: {
     label: "Pendiente",
-    style: "bg-warning/15 text-warning-foreground border-warning/30",
+    style: "bg-amber-500/20 text-amber-400 border border-amber-500/20",
+    topBorder: "border-t-amber-500/40",
   },
   received: {
     label: "Recibido",
-    style: "bg-primary/10 text-primary border-primary/20",
+    style: "bg-blue-500/10 text-blue-400 border border-blue-500/20",
+    topBorder: "border-t-blue-500/40",
   },
   paid: {
     label: "Pagado",
-    style: "bg-success/15 text-success-foreground border-success/30",
+    style: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
+    topBorder: "border-t-emerald-500/40",
   },
   cancelled: {
     label: "Cancelado",
-    style: "bg-muted text-muted-foreground border-border",
+    style: "bg-muted text-muted-foreground border border-border",
+    topBorder: "border-t-border",
   },
 };
 
 export default function PurchaseOrdersListPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
   const { data, isPending, error } = useQuery({
     queryKey: ["purchase-orders"],
     queryFn: getPurchaseOrders,
@@ -78,14 +80,11 @@ export default function PurchaseOrdersListPage() {
   });
 
   const handleDelete = (orderId: number) => {
-    if (deleteMutation.isPending) {
-      return;
-    }
+    if (deleteMutation.isPending) return;
     deleteMutation.mutate(orderId);
   };
 
   const handleCopy = (order: PurchaseOrderListItem, total: number) => {
-    // Group products by ID, name and price to ensure correct consolidation
     const groupedLines = order.lines.reduce(
       (acc: Record<string, PurchaseOrderLine>, line) => {
         const key = `${line.productId}-${line.productName}-${line.buyPriceSupplier}`;
@@ -121,259 +120,207 @@ export default function PurchaseOrdersListPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pt-8 sm:px-6">
-        {/* HEADER SECTION */}
-        <header className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-              <Package className="size-6" />
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 px-4 pt-6 pb-8 sm:px-6">
+
+        {/* HEADER */}
+        <header className="flex items-center justify-between gap-3 mb-1">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10 border border-amber-500/20">
+              <Package className="h-5 w-5 text-amber-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              <h1 className="text-xl font-black tracking-tight text-foreground leading-none">
                 Órdenes de Compra
               </h1>
-              <p className="text-sm font-medium text-muted-foreground">
-                {data?.orders?.length ?? 0} registros de proveedores
+              <p className="text-xs font-medium text-muted-foreground/60 mt-0.5">
+                {data?.orders?.length ?? 0} pendientes
               </p>
             </div>
           </div>
-
           <Button
             onClick={() => navigate("/purchase-order/new")}
-            className="group h-12 w-full rounded-2xl shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] sm:h-11 sm:w-auto sm:px-8"
+            size="icon"
+            className="h-10 w-10 rounded-full bg-crimson hover:bg-crimson/90 text-white shrink-0 shadow-lg shadow-crimson/20"
           >
-            <Plus className="mr-2 size-5 transition-transform group-hover:rotate-90" />
-            Nueva Orden de Compra
+            <Plus className="h-5 w-5" />
           </Button>
         </header>
 
         {/* FEEDBACK STATES */}
-        <section className="grid gap-6">
-          {isPending && (
-            <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
-              <Loader2 className="size-10 animate-spin text-primary mb-4" />
-              <p className="font-bold">Cargando historial...</p>
+        {isPending && (
+          <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
+            <div className="size-10 animate-spin rounded-full border-4 border-border border-t-crimson mb-4" />
+            <p className="font-bold tracking-tight text-sm">Cargando historial...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-8 text-center">
+            <p className="font-bold text-destructive">Error al cargar las órdenes</p>
+            <p className="mt-1 text-sm text-destructive/70">
+              Por favor intenta de nuevo más tarde.
+            </p>
+          </div>
+        )}
+
+        {!isPending && !error && (!data?.orders || data.orders.length === 0) && (
+          <div className="flex flex-col items-center justify-center py-16 px-6 text-center border border-dashed border-border/40 rounded-2xl mt-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/40 mb-4">
+              <Receipt className="h-7 w-7 text-muted-foreground/40" />
             </div>
-          )}
+            <h3 className="text-lg font-black text-foreground">Sin órdenes aún</h3>
+            <p className="text-sm text-muted-foreground/60 mt-1">
+              Registrá la primera orden de compra con el botón +
+            </p>
+          </div>
+        )}
 
-          {error && (
-            <div className="rounded-[2.5rem] border border-destructive/20 bg-destructive/10 p-12 text-center text-destructive">
-              <AlertCircle className="mx-auto size-10 mb-4 opacity-50" />
-              <p className="font-bold">Error al cargar las órdenes</p>
-              <p className="mt-1 text-sm opacity-80">
-                Por favor intenta de nuevo más tarde.
-              </p>
-            </div>
-          )}
-
-          {!isPending &&
-            !error &&
-            (!data?.orders || data.orders.length === 0) && (
-              <div className="flex flex-col items-center justify-center rounded-[3rem] border-2 border-dashed border-muted bg-card/50 p-20 text-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted text-muted-foreground mb-6">
-                  <Receipt className="size-10" />
-                </div>
-                <h3 className="text-2xl font-bold text-foreground">
-                  Sin órdenes aún
-                </h3>
-                <p className="mt-2 text-muted-foreground font-medium max-w-xs mx-auto">
-                  Registra tu primera orden de compra consolidada para tus
-                  proveedores.
-                </p>
-              </div>
-            )}
-
-          {/* LISTADO DE TARJETAS */}
+        {/* ORDER CARDS */}
+        <section className="flex flex-col gap-3">
           {data?.orders?.map((order) => {
             const orderTotal = (order.lines ?? []).reduce(
               (total, line) => total + line.buyPriceSupplier * line.quantity,
               0,
             );
-            const statusInfo = STATUS_CONFIG.pending;
+            const statusKey = "pending";
+            const statusInfo = STATUS_CONFIG[statusKey];
 
             return (
-              <Card
+              <article
                 key={order.purchaseOrderId}
-                className="group relative flex flex-col overflow-hidden rounded-[2.5rem] border border-border bg-card shadow-sm transition-all hover:shadow-xl hover:shadow-primary/5"
+                className={cn(
+                  "rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm overflow-hidden border-t-2",
+                  statusInfo.topBorder,
+                )}
               >
-                <CardContent className="p-0">
-                  {/* CABECERA DE TARJETA */}
-                  <div className="flex flex-col gap-6 p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-4">
-                        {/* Icono de Proveedor */}
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-all group-hover:bg-primary group-hover:text-primary-foreground sm:h-14 sm:w-14 sm:rounded-[1.25rem]">
-                          <Store className="size-6 sm:size-7" />
-                        </div>
-
-                        <div className="space-y-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                              ID: #{order.purchaseOrderId}
-                            </span>
-                            <span
-                              className={cn(
-                                "rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border",
-                                statusInfo.style,
-                              )}
-                            >
-                              {statusInfo.label}
-                            </span>
-                          </div>
-                          <h3 className="text-xl font-bold text-foreground sm:text-2xl">
-                            Proveedor: Barack
-                          </h3>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-9 w-9 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
-                          onClick={() => handleCopy(order, orderTotal)}
-                          title="Copiar detalles"
-                        >
-                          <Copy className="size-4" />
-                        </Button>
-
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-9 w-9 rounded-full text-destructive hover:bg-destructive/10"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent
-                            onClick={(e) => e.stopPropagation()}
-                            className="rounded-3xl"
-                          >
-                            <DialogHeader>
-                              <DialogTitle>¿Eliminar pedido?</DialogTitle>
-                              <DialogDescription>
-                                Esta acción no se puede deshacer. Se eliminará
-                                el registro del pedido #{order.purchaseOrderId}.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <DialogFooter className="gap-2 sm:gap-0">
-                              <DialogClose asChild>
-                                <Button variant="outline">Cancelar</Button>
-                              </DialogClose>
-                              <Button
-                                variant="destructive"
-                                onClick={() =>
-                                  handleDelete(order.purchaseOrderId)
-                                }
-                              >
-                                Eliminar Pedido
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                    </div>
-
-                    {/* INFO SECTION */}
-                    <div className="flex flex-wrap items-center gap-y-3 gap-x-6 text-sm font-medium text-muted-foreground">
+                {/* CARD HEADER */}
+                <div className="p-4 pb-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black font-mono text-muted-foreground/50">
+                        ID: #{order.purchaseOrderId}
+                      </span>
                       <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                          <Calendar className="size-4" />
-                        </div>
-                        <span className="text-foreground/80">
-                          {new Date(order.createdAt).toLocaleDateString(
-                            "es-CL",
-                            {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            },
+                        <span
+                          className={cn(
+                            "rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wider",
+                            statusInfo.style,
                           )}
+                        >
+                          {statusInfo.label}
                         </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                          <Package className="size-4" />
-                        </div>
-                        <span className="text-foreground/80">
-                          {order.lines?.length ?? 0} productos consolidados
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground/50">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(order.createdAt).toLocaleDateString("es-CL", {
+                            day: "2-digit",
+                            month: "short",
+                          })}
                         </span>
                       </div>
                     </div>
 
-                    <Button
-                      variant="outline"
-                      className="h-12 w-full rounded-2xl border-primary/10 bg-background px-6 font-bold text-primary shadow-sm transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
-                      onClick={() =>
-                        navigate(`/purchase-order/${order.purchaseOrderId}`)
-                      }
-                    >
-                      Gestionar Orden
-                      <ChevronRight className="ml-2 size-4" />
-                    </Button>
-                  </div>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full text-muted-foreground/50 hover:text-foreground hover:bg-muted/60"
+                        onClick={() => handleCopy(order, orderTotal)}
+                        title="Copiar detalles"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
 
-                  {/* DETALLE DE ITEMS */}
-                  <div className="px-6 pb-2">
-                    <div className="rounded-[1.5rem] bg-muted/30 p-4 border border-border/50">
-                      <div className="flex flex-col divide-y divide-border/30">
-                        {(order.lines ?? []).slice(0, 2).map((line) => (
-                          <div
-                            key={line.productId}
-                            className="flex items-center justify-between py-2 text-sm"
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10"
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <div className="flex flex-col">
-                              <span className="font-bold text-foreground leading-tight">
-                                {line.quantity}x{" "}
-                                {line.productName ?? "Producto"}
-                              </span>
-                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                                Costo:{" "}
-                                {formatChileanPeso(line.buyPriceSupplier)} |
-                                Venta: {formatChileanPeso(line.sellPriceClient)}
-                              </span>
-                            </div>
-                            <span className="font-bold text-foreground">
-                              {formatChileanPeso(
-                                line.buyPriceSupplier * line.quantity,
-                              )}
-                            </span>
-                          </div>
-                        ))}
-                        {(order.lines ?? []).length > 2 && (
-                          <div className="pt-2 text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                            + {(order.lines ?? []).length - 2} productos
-                            adicionales
-                          </div>
-                        )}
-                      </div>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent onClick={(e) => e.stopPropagation()}>
+                          <DialogHeader>
+                            <DialogTitle>¿Eliminar orden?</DialogTitle>
+                            <DialogDescription>
+                              Esta acción no se puede deshacer. Se eliminará la
+                              orden #{order.purchaseOrderId}.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <DialogFooter className="gap-2 sm:gap-0">
+                            <DialogClose asChild>
+                              <Button variant="outline">Cancelar</Button>
+                            </DialogClose>
+                            <Button
+                              variant="destructive"
+                              onClick={() => handleDelete(order.purchaseOrderId)}
+                            >
+                              Eliminar Orden
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </div>
+                </div>
 
-                  {/* FOOTER: TOTAL */}
-                  <div className="mt-4 px-6 pb-6">
-                    <div className="flex items-center justify-between gap-3 bg-primary p-6 text-primary-foreground rounded-[2rem] shadow-lg shadow-primary/20">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary-foreground/70">
-                          Total a Pagar
-                        </span>
-                        <span className="text-2xl font-bold tracking-tight leading-none mt-1">
-                          {formatChileanPeso(orderTotal)}
-                        </span>
-                      </div>
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-foreground/10 backdrop-blur-md">
-                        <Receipt className="size-6 text-primary-foreground" />
-                      </div>
+                {/* PRODUCT LINES */}
+                <div className="mx-4 rounded-xl bg-muted/30 border border-border/30 px-3 py-1.5 mb-3">
+                  {(order.lines ?? []).slice(0, 2).map((line, i) => (
+                    <div
+                      key={line.productId}
+                      className={cn(
+                        "flex justify-between items-center py-1.5",
+                        i !== 0 && "border-t border-border/20",
+                      )}
+                    >
+                      <p className="text-xs font-bold text-foreground/80 truncate flex-1 pr-3">
+                        {line.productName ?? "Producto"}
+                      </p>
+                      <p className="text-xs text-muted-foreground/60 shrink-0">
+                        {line.quantity} × {formatChileanPeso(line.buyPriceSupplier)}
+                      </p>
                     </div>
+                  ))}
+                  {(order.lines ?? []).length > 2 && (
+                    <div className="py-1.5 border-t border-border/20 text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/40">
+                      + {(order.lines ?? []).length - 2} productos adicionales
+                    </div>
+                  )}
+                </div>
+
+                {/* FOOTER: TOTAL + ACTION */}
+                <div className="flex items-end justify-between px-4 pb-4 border-t border-border/30 pt-3">
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 block mb-0.5">
+                      Total Orden
+                    </span>
+                    <span className="text-2xl font-black text-foreground tracking-tighter">
+                      {formatChileanPeso(orderTotal)}
+                    </span>
                   </div>
-                </CardContent>
-              </Card>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 rounded-xl border-border/50 text-sm font-bold hover:bg-muted/60"
+                    onClick={() => navigate(`/purchase-order/${order.purchaseOrderId}`)}
+                  >
+                    Gestionar
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </article>
             );
           })}
+
+          {deleteMutation.isPending && (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/40" />
+            </div>
+          )}
         </section>
       </div>
     </div>
