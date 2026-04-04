@@ -13,12 +13,14 @@ import { cn } from "@/lib/utils";
 import { formatChileanPeso } from "@/utils/format-currency";
 import {
   Calendar,
+  ChevronDown,
   Copy,
+  Loader2,
   Pencil,
-  RefreshCw,
   Trash2,
   TrendingUp,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type OrderLine = {
@@ -38,23 +40,56 @@ type OrderCardProps = {
   onDelete?: (orderId: number) => void;
   onClick?: () => void;
   isSelected: boolean;
+  isUpdating?: boolean;
 };
 
 const STATUS_LABELS: Record<OrderCardProps["status"], string> = {
   pending: "Pendiente",
   paid: "Pagado",
   delivered: "Entregado",
-  delivered_paid: "Entregado y pagado",
+  delivered_paid: "Completado",
   cancelled: "Cancelado",
 };
 
 const STATUS_STYLES: Record<OrderCardProps["status"], string> = {
-  pending: "bg-warning/15 text-warning-foreground",
-  paid: "bg-success/15 text-success-foreground",
-  delivered: "bg-primary/10 text-primary",
-  delivered_paid: "bg-success/15 text-success-foreground",
+  pending: "bg-warning/15 text-warning",
+  paid: "bg-success/15 text-success",
+  delivered: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+  delivered_paid: "bg-success/15 text-success",
   cancelled: "bg-destructive/10 text-destructive",
 };
+
+const STATUS_ACCENT: Record<OrderCardProps["status"], string> = {
+  pending: "border-l-warning",
+  paid: "border-l-success",
+  delivered: "border-l-blue-500",
+  delivered_paid: "border-l-success",
+  cancelled: "border-l-border",
+};
+
+const SEGMENTED_OPTIONS: {
+  value: "pending" | "delivered" | "delivered_paid";
+  label: string;
+  activeClass: string;
+}[] = [
+  {
+    value: "pending",
+    label: "Pendiente",
+    activeClass: "bg-warning/15 text-warning",
+  },
+  {
+    value: "delivered",
+    label: "Entregado",
+    activeClass: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+  },
+  {
+    value: "delivered_paid",
+    label: "Pagado",
+    activeClass: "bg-success/15 text-success",
+  },
+];
+
+const SWITCHABLE_STATUSES = new Set(["pending", "delivered", "delivered_paid"]);
 
 export default function OrderCard({
   id,
@@ -63,6 +98,7 @@ export default function OrderCard({
   createdAt,
   items,
   isSelected,
+  isUpdating = false,
   onEdit,
   onClick,
   onDelete,
@@ -73,24 +109,8 @@ export default function OrderCard({
     newStatus: OrderCardProps["status"],
   ) => void;
 }) {
-  const handleStatusClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!onStatusChange) return;
+  const [showStrip, setShowStrip] = useState(false);
 
-    const nextStatusMap: Record<
-      OrderCardProps["status"],
-      OrderCardProps["status"]
-    > = {
-      pending: "delivered",
-      delivered: "delivered_paid",
-      delivered_paid: "pending",
-      paid: "delivered_paid", // If somehow paid, move to delivered_paid
-      cancelled: "pending", // If cancelled, revive to pending
-    };
-
-    const nextStatus = nextStatusMap[status];
-    onStatusChange(id, nextStatus);
-  };
   const total = items.reduce(
     (sum, item) => sum + item.pricePerUnit * item.quantity,
     0,
@@ -101,6 +121,13 @@ export default function OrderCard({
       sum + (item.pricePerUnit - item.buyPriceSupplier) * item.quantity,
     0,
   );
+
+  const canSwitchStatus = !!(onStatusChange && SWITCHABLE_STATUSES.has(status));
+
+  // Auto-collapse strip after a successful status update
+  useEffect(() => {
+    setShowStrip(false);
+  }, [status]);
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -128,154 +155,223 @@ export default function OrderCard({
     <article
       onClick={onClick}
       className={cn(
-        "group relative rounded-3xl border border-border/70 bg-card/90 p-6 shadow-sm transition-all cursor-pointer",
+        "group relative flex flex-col overflow-hidden rounded-2xl border-l-[3px] border bg-card text-left transition-all duration-300 cursor-pointer",
+        "hover:-translate-y-0.5 hover:scale-[1.006] active:scale-[0.985]",
+        STATUS_ACCENT[status],
         isSelected
-          ? "border-success/50 bg-success/10 shadow-md ring-2 ring-success/30"
-          : "hover:border-success/30 hover:bg-card hover:shadow-md",
+          ? "border-crimson/50 bg-crimson/5 shadow-2xl shadow-crimson/10 ring-1 ring-crimson/20"
+          : "border-border/60 hover:border-crimson/30 hover:shadow-lg hover:shadow-crimson/5",
       )}
     >
-      {/* HEADER: Nombre y Ganancia */}
-      <div className="flex flex-nowrap items-start justify-between gap-4">
-        <div className="space-y-1">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80">
-            Pedido #{id}
-          </p>
-          <h3 className="text-xl font-bold text-foreground leading-tight">
-            {localName}
-          </h3>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleStatusClick}
-            className={cn(
-              "rounded-full px-3 h-7 text-[10px] font-bold uppercase tracking-wide transition-all hover:scale-105 active:scale-95",
-              "whitespace-nowrap max-w-[200px]",
-              STATUS_STYLES[status],
-              onStatusChange
-                ? "cursor-pointer hover:shadow-sm"
-                : "cursor-default",
-            )}
-            title={onStatusChange ? "Click para cambiar estado" : undefined}
-          >
-            <div className="flex items-center gap-1.5 overflow-hidden">
-              <span className="truncate">{STATUS_LABELS[status]}</span>
-              {onStatusChange && <RefreshCw className="h-3 w-3 shrink-0" />}
-            </div>
-          </Button>
-          <div className="flex items-center gap-1.5 bg-success/10 px-2 py-1 rounded-lg text-success">
-            <TrendingUp className="h-3.5 w-3.5" />
-            <span className="text-xs font-bold">
-              {formatChileanPeso(revenue)}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* CONTENT: Items (con un divisor sutil) */}
-      <div className="mt-6 space-y-3">
-        {items.map((item) => (
-          <div key={`${item.name}-${item.quantity}`} className="group/item">
-            <div className="flex justify-between text-sm">
-              <span className="font-medium text-foreground/90">
-                {item.name}
-              </span>
-              <span className="font-bold text-foreground">
-                {formatChileanPeso(item.pricePerUnit * item.quantity)}
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {item.quantity} unidades × {formatChileanPeso(item.pricePerUnit)}
+      {/* MAIN CONTENT */}
+      <div className="p-3.5">
+        {/* HEADER */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-0.5 min-w-0">
+            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-muted-foreground/50">
+              Pedido #{id}
             </p>
+            <h3 className="text-base font-black text-foreground leading-snug tracking-tight">
+              {localName}
+            </h3>
           </div>
-        ))}
-      </div>
-
-      {/* FOOTER: Fecha, Acciones y Total Final */}
-      <div className="mt-6 pt-4 border-t border-dashed border-border flex items-center justify-between">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Calendar className="h-4 w-4" />
-          <span className="text-xs font-medium">
-            {new Date(createdAt).toLocaleDateString("es-CL", {
-              day: "2-digit",
-              month: "short",
-            })}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* Botones de acción agrupados */}
-          <div className="flex items-center gap-1 mr-2">
-            <button
-              onClick={handleCopy}
-              className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
-              title="Copiar detalles"
-            >
-              <Copy className="h-4 w-4" />
-            </button>
-            {onEdit && (
+          <div className="flex flex-col items-end gap-1.5 shrink-0">
+            {/* Status badge — tappable if status can be switched */}
+            {canSwitchStatus ? (
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onEdit(id);
+                  setShowStrip((prev) => !prev);
                 }}
-                className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
+                className={cn(
+                  "rounded-full px-2.5 h-7 text-[9px] font-black uppercase tracking-widest flex items-center gap-1 transition-opacity touch-manipulation",
+                  STATUS_STYLES[status],
+                  isUpdating && "opacity-60 pointer-events-none",
+                )}
               >
-                <Pencil className="h-4 w-4" />
+                {isUpdating ? (
+                  <Loader2 className="h-2.5 w-2.5 animate-spin shrink-0" />
+                ) : (
+                  <ChevronDown
+                    className={cn(
+                      "h-2.5 w-2.5 shrink-0 transition-transform duration-200",
+                      showStrip && "rotate-180",
+                    )}
+                  />
+                )}
+                {STATUS_LABELS[status]}
               </button>
+            ) : (
+              <div
+                className={cn(
+                  "rounded-full px-3 h-7 text-[9px] font-black uppercase tracking-widest flex items-center",
+                  STATUS_STYLES[status],
+                )}
+              >
+                {STATUS_LABELS[status]}
+              </div>
             )}
-            {onDelete && (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <button
-                    type="button"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full text-rose-500 transition-colors hover:bg-rose-50 hover:text-rose-700"
-                    onClick={(e) => e.stopPropagation()} // Evita seleccionar la card al abrir el diálogo
-                    aria-label="Eliminar pedido"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </DialogTrigger>
-                <DialogContent onClick={(e) => e.stopPropagation()}>
-                  <DialogHeader>
-                    <DialogTitle>¿Eliminar pedido?</DialogTitle>
-                    <DialogDescription>
-                      Esta acción no se puede deshacer. Se eliminará el registro
-                      del pedido #{id}.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter className="gap-2 sm:gap-0">
-                    <DialogClose asChild>
-                      <Button variant="outline">Cancelar</Button>
-                    </DialogClose>
-                    <Button
-                      variant="destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(id);
-                      }}
-                    >
-                      Eliminar Pedido
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            )}
+            <div className="flex items-center gap-1 bg-success/15 px-2 py-1 rounded-full text-success border border-success/20">
+              <TrendingUp className="h-2.5 w-2.5 shrink-0" />
+              <span className="text-[10px] font-black tracking-tight">
+                +{formatChileanPeso(revenue)}
+              </span>
+            </div>
           </div>
+        </div>
 
-          {/* Total Destacado */}
+        {/* ITEMS */}
+        <div className="mt-3">
+          <div className="rounded-xl bg-muted/40 px-3 py-1.5 border border-border/30">
+            {items.map((item, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "flex justify-between items-center py-1.5",
+                  i !== 0 && "border-t border-border/20",
+                )}
+              >
+                <div className="min-w-0 flex-1 pr-3">
+                  <p className="font-bold text-foreground/90 text-xs leading-snug">
+                    {item.name}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {item.quantity} unidades ×{" "}
+                    {formatChileanPeso(item.pricePerUnit)}
+                  </p>
+                </div>
+                <p className="font-black text-foreground text-xs shrink-0">
+                  {formatChileanPeso(item.pricePerUnit * item.quantity)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* FOOTER */}
+        <div className="mt-2.5 flex items-center justify-between border-t border-border/40 pt-2.5">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 text-muted-foreground/60">
+              <Calendar className="h-3 w-3" />
+              <span className="text-[9px] font-black uppercase tracking-widest">
+                {new Date(createdAt).toLocaleDateString("es-CL", {
+                  day: "2-digit",
+                  month: "short",
+                })}
+              </span>
+            </div>
+            <div className="flex items-center gap-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-full opacity-40 hover:opacity-100"
+                onClick={handleCopy}
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+              {onEdit && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-full opacity-40 hover:opacity-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(id);
+                  }}
+                >
+                  <Pencil className="h-3 w-3" />
+                </Button>
+              )}
+              {onDelete && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 rounded-full opacity-40 hover:opacity-100 text-destructive hover:bg-destructive/10"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent onClick={(e) => e.stopPropagation()}>
+                    <DialogHeader>
+                      <DialogTitle>¿Eliminar pedido?</DialogTitle>
+                      <DialogDescription>
+                        Esta acción no se puede deshacer. Se eliminará el
+                        registro del pedido #{id}.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                      <DialogClose asChild>
+                        <Button variant="outline">Cancelar</Button>
+                      </DialogClose>
+                      <Button
+                        variant="destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(id);
+                        }}
+                      >
+                        Eliminar Pedido
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+          </div>
           <div className="text-right">
-            <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-tighter">
-              Total A Cobrar
+            <p className="text-[8px] font-black uppercase text-muted-foreground/40 tracking-[0.2em] mb-0.5">
+              Total a cobrar
             </p>
-            <p className="text-lg font-black text-foreground">
+            <p className="text-xl font-black text-foreground tracking-tighter">
               {formatChileanPeso(total)}
             </p>
           </div>
         </div>
       </div>
+
+      {/* STATUS STRIP — integrated bottom, revealed by tapping the badge */}
+      {canSwitchStatus && showStrip && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className={cn(
+            "flex border-t border-border/40 overflow-hidden",
+            isUpdating && "opacity-50 pointer-events-none",
+          )}
+        >
+          {SEGMENTED_OPTIONS.map((option, i) => {
+            const isActive = status === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                disabled={isUpdating || isActive}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!isUpdating && !isActive) {
+                    onStatusChange!(id, option.value);
+                  }
+                }}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] font-black uppercase tracking-widest transition-colors duration-150 touch-manipulation",
+                  i !== 0 && "border-l border-border/30",
+                  isActive
+                    ? option.activeClass
+                    : "text-muted-foreground/40 hover:text-foreground/60 hover:bg-muted/40 active:bg-muted/60",
+                )}
+              >
+                {isUpdating && isActive ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : null}
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </article>
   );
 }

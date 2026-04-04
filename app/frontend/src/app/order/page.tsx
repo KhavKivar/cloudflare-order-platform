@@ -42,6 +42,7 @@ export default function OrdersListPage() {
   // UI State
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(""); // This stores the stringified orderId
+  const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
 
   // Data Fetching
   const { data, isPending, error } = useQuery<OrdersResponse>({
@@ -76,11 +77,13 @@ export default function OrdersListPage() {
     mutationFn: (payload: { orderId: number; status: OrderStatus }) =>
       updateOrderStatus(payload.orderId, payload.status),
     onSuccess: () => {
-      toast.success("Estado actualizado");
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
     onError: () => {
       toast.error("Error al actualizar estado");
+    },
+    onSettled: () => {
+      setUpdatingOrderId(null);
     },
   });
 
@@ -90,12 +93,13 @@ export default function OrdersListPage() {
   };
 
   const handleStatusChange = (orderId: number, newStatus: OrderStatus) => {
+    setUpdatingOrderId(orderId);
     updateStatusMutation.mutate({ orderId, status: newStatus });
   };
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 pt-8 sm:px-6">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-2 px-4 pt-8 sm:px-6">
         {/* HEADER SECTION */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
           <div className="flex items-center gap-3">
@@ -218,7 +222,7 @@ export default function OrdersListPage() {
 
         {/* LIST SECTION */}
         <section className="space-y-4">
-          <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
+          <div className="grid gap-3 md:gap-5 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
             {filteredOrders?.map((order) => (
               <OrderCard
                 key={order.orderId}
@@ -236,6 +240,7 @@ export default function OrdersListPage() {
                 onDelete={() => handleDelete(order)}
                 onStatusChange={handleStatusChange}
                 isSelected={value === String(order.orderId)}
+                isUpdating={updatingOrderId === order.orderId}
               />
             ))}
           </div>

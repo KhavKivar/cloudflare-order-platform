@@ -122,7 +122,7 @@ export default function PurchaseOrdersListPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pt-8 sm:px-6">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pt-8 sm:px-6">
         {/* HEADER SECTION */}
         <header className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
@@ -167,20 +167,22 @@ export default function PurchaseOrdersListPage() {
             </div>
           )}
 
-          {!isPending && !error && (!data?.orders || data.orders.length === 0) && (
-            <div className="flex flex-col items-center justify-center rounded-[3rem] border-2 border-dashed border-muted bg-card/50 p-20 text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted text-muted-foreground mb-6">
-                <Receipt className="size-10" />
+          {!isPending &&
+            !error &&
+            (!data?.orders || data.orders.length === 0) && (
+              <div className="flex flex-col items-center justify-center rounded-[3rem] border-2 border-dashed border-muted bg-card/50 p-20 text-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted text-muted-foreground mb-6">
+                  <Receipt className="size-10" />
+                </div>
+                <h3 className="text-2xl font-bold text-foreground">
+                  Sin órdenes aún
+                </h3>
+                <p className="mt-2 text-muted-foreground font-medium max-w-xs mx-auto">
+                  Registra tu primera orden de compra consolidada para tus
+                  proveedores.
+                </p>
               </div>
-              <h3 className="text-2xl font-bold text-foreground">
-                Sin órdenes aún
-              </h3>
-              <p className="mt-2 text-muted-foreground font-medium max-w-xs mx-auto">
-                Registra tu primera orden de compra consolidada para tus
-                proveedores.
-              </p>
-            </div>
-          )}
+            )}
 
           {/* LISTADO DE TARJETAS */}
           {data?.orders?.map((order) => {
@@ -247,12 +249,15 @@ export default function PurchaseOrdersListPage() {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent onClick={(e) => e.stopPropagation()} className="rounded-3xl">
+                          <DialogContent
+                            onClick={(e) => e.stopPropagation()}
+                            className="rounded-3xl"
+                          >
                             <DialogHeader>
                               <DialogTitle>¿Eliminar pedido?</DialogTitle>
                               <DialogDescription>
-                                Esta acción no se puede deshacer. Se eliminará el
-                                registro del pedido #{order.purchaseOrderId}.
+                                Esta acción no se puede deshacer. Se eliminará
+                                el registro del pedido #{order.purchaseOrderId}.
                               </DialogDescription>
                             </DialogHeader>
                             <DialogFooter className="gap-2 sm:gap-0">
@@ -280,11 +285,14 @@ export default function PurchaseOrdersListPage() {
                           <Calendar className="size-4" />
                         </div>
                         <span className="text-foreground/80">
-                          {new Date(order.createdAt).toLocaleDateString("es-CL", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
+                          {new Date(order.createdAt).toLocaleDateString(
+                            "es-CL",
+                            {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            },
+                          )}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -320,10 +328,13 @@ export default function PurchaseOrdersListPage() {
                           >
                             <div className="flex flex-col">
                               <span className="font-bold text-foreground leading-tight">
-                                {line.quantity}x {line.productName ?? "Producto"}
+                                {line.quantity}x{" "}
+                                {line.productName ?? "Producto"}
                               </span>
                               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                                Costo: {formatChileanPeso(line.buyPriceSupplier)} | Venta: {formatChileanPeso(line.sellPriceClient)}
+                                Costo:{" "}
+                                {formatChileanPeso(line.buyPriceSupplier)} |
+                                Venta: {formatChileanPeso(line.sellPriceClient)}
                               </span>
                             </div>
                             <span className="font-bold text-foreground">
@@ -335,7 +346,8 @@ export default function PurchaseOrdersListPage() {
                         ))}
                         {(order.lines ?? []).length > 2 && (
                           <div className="pt-2 text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                            + {(order.lines ?? []).length - 2} productos adicionales
+                            + {(order.lines ?? []).length - 2} productos
+                            adicionales
                           </div>
                         )}
                       </div>

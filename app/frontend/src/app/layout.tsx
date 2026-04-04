@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { Outlet, useLocation } from "react-router";
 
+import MobileNav from "@/components/mobile-nav/mobile-nav";
 import Navbar from "@/components/navbar/navbar";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -113,7 +114,7 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen">
-      <Toaster />
+      <Toaster position="top-center" />
       <Navbar
         title={navbarConfig.title}
         subtitle={navbarConfig.subtitle}
@@ -124,6 +125,7 @@ export default function Layout() {
       <main>
         <Outlet />
       </main>
+      <MobileNav />
     </div>
   );
 }

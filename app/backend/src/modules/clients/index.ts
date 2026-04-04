@@ -27,7 +27,7 @@ clientsApp.get(
     const db = getDb(c.env);
     const clientService = new ClientService(db);
     const client = await clientService.getClientByPhone(phone);
-    
+
     if (!client) {
       return c.json({ message: "Client not found by phone" }, 404);
     }
@@ -43,7 +43,7 @@ clientsApp.get(
     const db = getDb(c.env);
     const clientService = new ClientService(db);
     const client = await clientService.getClientByPhoneId(phoneId);
-    
+
     if (!client) {
       return c.json({ message: "Client not found by phoneId" }, 404);
     }
@@ -58,7 +58,7 @@ clientsApp.post(
     const body = c.req.valid("json");
     const db = getDb(c.env);
     const clientService = new ClientService(db);
-    
+
     try {
       const created = await clientService.createClient(body);
       return c.json({ client: created }, 201);
@@ -79,7 +79,7 @@ clientsApp.patch(
     const body = c.req.valid("json");
     const db = getDb(c.env);
     const clientService = new ClientService(db);
-    
+
     try {
       const updated = await clientService.updateClient(id, body);
       return c.json({ client: updated });
@@ -96,7 +96,7 @@ clientsApp.delete("/:id", async (c) => {
   const id = parseInt(c.req.param("id"));
   const db = getDb(c.env);
   const clientService = new ClientService(db);
-  
+
   try {
     const deleted = await clientService.deleteClient(id);
     return c.json({ client: deleted });

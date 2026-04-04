@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { eq, ne, sql } from "drizzle-orm";
 import { DrizzleD1Database } from "drizzle-orm/d1";
 import { orderLines, orders, products } from "../../db/schema.js";
 
@@ -15,7 +15,7 @@ export class RevenueService {
       .from(orders)
       .innerJoin(orderLines, eq(orders.id, orderLines.orderId))
       .innerJoin(products, eq(orderLines.productId, products.id))
-      .where(eq(orders.status, "delivered_paid"))
+      .where(ne(orders.status, "cancelled"))
       .groupBy(sql`strftime('%Y-%m-%d', ${orders.createdAt})`)
       .all();
 

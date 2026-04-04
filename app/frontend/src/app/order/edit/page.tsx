@@ -536,7 +536,7 @@ export default function OrdersEditPage() {
                     <div className="flex flex-col gap-3">
                       <Button
                         onClick={handleUpdateOrder}
-                        variant="secondary"
+                        variant="default"
                         disabled={
                           updateMutation.isPending || orderItems.length === 0
                         }

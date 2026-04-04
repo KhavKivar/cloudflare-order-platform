@@ -5,7 +5,7 @@
   "description": "OrderSapp Backend - Cloudflare Worker",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev --env-file .env",
+    "dev": "wrangler dev --remote --env-file .env",
     "deploy": "wrangler deploy",
     "build": "tsc",
     "typecheck": "tsc --noEmit",

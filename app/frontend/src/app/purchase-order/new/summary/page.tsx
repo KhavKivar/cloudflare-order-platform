@@ -88,7 +88,7 @@ export default function PurchaseOrderSummaryPage() {
   };
 
   return (
-    <div className="space-y-8 pb-32 sm:pb-10">
+    <div className="space-y-8 pb-44 sm:pb-10">
       <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
           Confirmar Orden
@@ -233,7 +233,7 @@ export default function PurchaseOrderSummaryPage() {
       </div>
 
       {/* STICKY BOTTOM BAR FOR MOBILE */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/80 p-4 backdrop-blur-xl sm:hidden">
+      <div className="fixed bottom-16 left-0 right-0 z-40 border-t border-border bg-background/90 p-4 backdrop-blur-xl sm:hidden">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-4">
           <div className="flex flex-col">
             <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">

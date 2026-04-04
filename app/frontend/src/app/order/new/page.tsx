@@ -540,7 +540,7 @@ export default function OrdersPage() {
 
                     <Button
                       onClick={handleCreateOrder}
-                      variant="secondary"
+                      variant="default"
                       size="action"
                       disabled={mutation.isPending || orderItems.length === 0}
                       className="w-full"

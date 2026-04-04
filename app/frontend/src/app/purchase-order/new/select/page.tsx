@@ -65,7 +65,7 @@ export default function PurchaseOrderSelectPage() {
         </p>
       </div>
 
-      <section className="relative pb-24 sm:pb-0">
+      <section className="relative pb-44 sm:pb-0">
         <div className="flex flex-col gap-4">
           <div className="hidden sm:flex sm:items-center sm:justify-between sm:rounded-2xl sm:bg-card sm:p-4 sm:shadow-sm sm:border sm:border-border">
             <div className="flex items-center gap-3">
@@ -147,7 +147,7 @@ export default function PurchaseOrderSelectPage() {
       </section>
 
       {/* STICKY BOTTOM BAR FOR MOBILE */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/80 p-4 backdrop-blur-lg sm:hidden">
+      <div className="fixed bottom-16 left-0 right-0 z-40 border-t border-border bg-background/90 p-4 backdrop-blur-xl sm:hidden">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-4">
           <div className="flex flex-col">
             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">

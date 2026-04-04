@@ -9,3 +9,5 @@ dist/
 .wrangler/
 .turbo/
 .vercel/
+.aidesigner/*
+!.aidesigner/.gitkeep
