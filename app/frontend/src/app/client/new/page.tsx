@@ -61,16 +61,18 @@ export default function NewClientPage() {
         )}
 
         {/* HEADER */}
-        <header className="mb-10">
-          <div className="mb-5 h-14 w-14 rounded-full bg-blue-500/8 border border-blue-500/20 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.08)]">
-            <Users className="h-6 w-6 text-blue-400" />
+        <header className="mb-8 flex items-center gap-3">
+          <div className="h-10 w-10 shrink-0 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+            <Users className="h-5 w-5 text-blue-400" />
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-foreground mb-2">
-            Nuevo Cliente
-          </h1>
-          <p className="text-sm text-muted-foreground leading-snug">
-            Registrá los datos del local para asociarlo a los pedidos.
-          </p>
+          <div>
+            <h1 className="text-xl font-black tracking-tight text-foreground leading-none">
+              Nuevo Cliente
+            </h1>
+            <p className="text-xs text-muted-foreground/60 mt-0.5">
+              Registrá los datos del local para asociarlo a los pedidos.
+            </p>
+          </div>
         </header>
 
         {/* FORM */}
