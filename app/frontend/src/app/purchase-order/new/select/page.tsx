@@ -65,7 +65,7 @@ export default function PurchaseOrderSelectPage() {
         </p>
       </div>
 
-      <section className="relative pb-44 sm:pb-0">
+      <section className="relative pb-32">
         <div className="flex flex-col gap-4">
           <div className="hidden sm:flex sm:items-center sm:justify-between sm:rounded-2xl sm:bg-card sm:p-4 sm:shadow-sm sm:border sm:border-border">
             <div className="flex items-center gap-3">
@@ -146,21 +146,21 @@ export default function PurchaseOrderSelectPage() {
         </div>
       </section>
 
-      {/* STICKY BOTTOM BAR FOR MOBILE */}
-      <div className="fixed bottom-16 left-0 right-0 z-40 border-t border-border bg-background/90 p-4 backdrop-blur-xl sm:hidden">
+      {/* STICKY BOTTOM BAR */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-6 pt-10 bg-gradient-to-t from-background via-background/95 to-transparent">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-4">
-          <div className="flex flex-col">
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          <div className="flex flex-col shrink-0">
+            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/50">
               Seleccionados
             </span>
-            <span className="text-lg font-bold text-foreground">
-              {selectedOrders.length} Pedidos
+            <span className="text-xl font-black text-foreground leading-tight">
+              {selectedOrders.length} {selectedOrders.length === 1 ? "Pedido" : "Pedidos"}
             </span>
           </div>
           <Button
             onClick={handleGoToSummary}
             disabled={selectedOrders.length === 0}
-            className="flex-1 h-12 shadow-lg shadow-primary/10"
+            className="flex-1 h-12 rounded-xl bg-crimson hover:bg-crimson/90 text-white font-bold shadow-lg shadow-crimson/20 disabled:opacity-40"
           >
             Siguiente
             <ArrowRight className="ml-2 size-4" />
