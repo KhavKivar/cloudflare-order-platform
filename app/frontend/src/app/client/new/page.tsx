@@ -1,7 +1,6 @@
 import {
   createClient,
   CreateClientDtoSchema,
-  type CreateClientDto,
 } from "@/features/client/api/create-client";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,8 +9,9 @@ import { CheckCircle2, MapPin, Phone, Users } from "lucide-react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
+import { z } from "zod";
 
-type FormFields = CreateClientDto;
+type FormFields = z.input<typeof CreateClientDtoSchema>;
 
 export default function NewClientPage() {
   const {

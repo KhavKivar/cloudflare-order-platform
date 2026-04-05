@@ -23,7 +23,6 @@ import {
 import OrderCard from "@/features/orders/components/OrderCard";
 import { getPurchaseOrder } from "@/features/purchase-orders/api/get-purchase-order";
 import { updatePurchaseOrder } from "@/features/purchase-orders/api/update-purchase-order";
-import { cn } from "@/lib/utils";
 import { formatChileanPeso } from "@/utils/format-currency";
 
 // --- TYPES & HELPERS ---

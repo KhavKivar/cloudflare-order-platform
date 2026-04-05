@@ -54,7 +54,7 @@ export default function ProductCreatePage() {
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isValid },
+    formState: { errors },
   } = form;
 
   const { mutate, isPending } = useMutation({

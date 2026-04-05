@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, ShoppingBag, ChevronsUpDown, Check, X } from "lucide-react";
+import { Plus, Search, ShoppingBag, X } from "lucide-react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
@@ -18,45 +18,31 @@ import {
   updateOrderStatus,
 } from "@/features/orders/api/update-order-status";
 import OrderCard from "@/features/orders/components/OrderCard";
-
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 export default function OrdersListPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // UI State
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(""); // This stores the stringified orderId
+  const [search, setSearch] = useState("");
   const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
 
-  // Data Fetching
   const { data, isPending, error } = useQuery<OrdersResponse>({
     queryKey: ["orders"],
     queryFn: getOrders,
   });
 
-  // Filter Logic: Only show the selected order if a value exists
   const filteredOrders = useMemo(() => {
-    if (!value || !data?.orders) return data?.orders ?? [];
-    return data.orders.filter((order) => String(order.orderId) === value);
-  }, [data, value]);
+    if (!data?.orders) return [];
+    if (!search.trim()) return data.orders;
+    const q = search.toLowerCase();
+    return data.orders.filter(
+      (o) =>
+        (o.localName ?? "").toLowerCase().includes(q) ||
+        String(o.orderId).includes(q),
+    );
+  }, [data, search]);
 
-  // Mutations
   const deleteMutation = useMutation({
     mutationFn: (payload: { orderId: number; order: OrderListItem }) =>
       deleteOrder(payload.orderId),
@@ -98,152 +84,123 @@ export default function OrdersListPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-2 px-4 pt-8 sm:px-6">
-        {/* HEADER SECTION */}
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 px-4 pt-6 pb-8 sm:px-6">
+
+        {/* HEADER */}
+        <header className="flex items-center justify-between gap-3 mb-1">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive text-destructive-foreground shadow-lg shadow-destructive/20">
-              <ShoppingBag className="size-6" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-crimson/10 border border-crimson/20">
+              <ShoppingBag className="h-5 w-5 text-crimson" />
             </div>
             <div>
-              <h1 className="text-2xl font-black tracking-tight text-foreground">
+              <h1 className="text-xl font-black tracking-tight text-foreground leading-none">
                 Lista de Pedidos
               </h1>
-              <p className="text-sm font-medium text-muted-foreground">
-                {data?.orders.length ?? 0} registros encontrados
+              <p className="text-xs font-medium text-muted-foreground/60 mt-0.5">
+                {data?.orders.length ?? 0} pedidos activos
               </p>
             </div>
           </div>
-
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
-            <Button
-              onClick={() => navigate("/order/new")}
-              className="group shadow-lg transition-all sm:w-auto"
-            >
-              <Plus className="mr-2 size-4 transition-transform group-hover:rotate-90" />
-              Nuevo Pedido
-            </Button>
-
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-              <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={open}
-                    className="h-10 w-full justify-between border-border bg-background shadow-none sm:w-[240px]"
-                  >
-                    <span className="truncate">
-                      {value && data?.orders
-                        ? (data.orders.find((f) => String(f.orderId) === value)
-                            ?.localName ?? `Pedido #${value}`)
-                        : "Filtrar pedido..."}
-                    </span>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-[calc(100vw-32px)] max-w-4xl p-0 sm:w-[var(--radix-popover-trigger-width)]"
-                  align="start"
-                  sideOffset={4}
-                >
-                  <Command>
-                    <CommandInput placeholder="Filtrar por nombre..." />
-                    <CommandList>
-                      <CommandEmpty>No se encontraron resultados.</CommandEmpty>
-                      <CommandGroup>
-                        {data?.orders.map((order) => (
-                          <CommandItem
-                            key={order.orderId}
-                            value={order.localName ?? `Pedido ${order.orderId}`}
-                            onSelect={() => {
-                              const strId = String(order.orderId);
-                              setValue(strId === value ? "" : strId);
-                              setOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                value === String(order.orderId)
-                                  ? "opacity-100"
-                                  : "opacity-0",
-                              )}
-                            />
-                            {order.localName ?? `Pedido #${order.orderId}`}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-
-              {value && (
-                <Button
-                  variant="outline"
-                  onClick={() => setValue("")}
-                  className="w-full border-border bg-background text-muted-foreground shadow-none hover:bg-muted sm:w-auto"
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  Limpiar
-                </Button>
-              )}
-            </div>
-          </div>
+          <Button
+            onClick={() => navigate("/order/new")}
+            size="icon"
+            className="h-10 w-10 rounded-full bg-crimson hover:bg-crimson/90 text-white shrink-0 shadow-lg shadow-crimson/20"
+          >
+            <Plus className="h-5 w-5" />
+          </Button>
         </header>
+
+        {/* SEARCH */}
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
+          <input
+            type="text"
+            placeholder="Buscar por cliente o ID..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className={cn(
+              "w-full rounded-full bg-muted/40 border border-border/40 py-3 pl-11 pr-10",
+              "text-sm text-foreground placeholder:text-muted-foreground/40",
+              "outline-none focus:border-border/80 focus:bg-muted/60 transition-all",
+            )}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted/60 text-muted-foreground/60 hover:text-foreground transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
 
         {/* FEEDBACK STATES */}
         {isPending && (
           <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
-            <div className="size-12 animate-spin rounded-full border-4 border-slate-200 border-t-rose-600 mb-4" />
-            <p className="font-bold tracking-tight">Cargando pedidos...</p>
+            <div className="size-10 animate-spin rounded-full border-4 border-border border-t-crimson mb-4" />
+            <p className="font-bold tracking-tight text-sm">Cargando pedidos...</p>
           </div>
         )}
 
         {error && (
-          <div className="rounded-[2rem] border border-rose-100 bg-rose-50 p-8 text-center">
-            <p className="font-bold text-rose-600">Error al cargar la lista</p>
-            <p className="mt-1 text-sm text-rose-500/80">
+          <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-8 text-center">
+            <p className="font-bold text-destructive">Error al cargar la lista</p>
+            <p className="mt-1 text-sm text-destructive/70">
               Por favor intenta de nuevo más tarde.
             </p>
           </div>
         )}
 
         {!isPending && !error && data?.orders.length === 0 && (
-          <div className="rounded-[2.5rem] border-2 border-dashed border-slate-200 bg-white/50 p-16 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-300 mb-4">
-              <ShoppingBag className="size-8" />
+          <div className="flex flex-col items-center justify-center py-16 px-6 text-center border border-dashed border-border/40 rounded-2xl mt-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/40 mb-4">
+              <ShoppingBag className="h-7 w-7 text-muted-foreground/40" />
             </div>
-            <h3 className="text-xl font-bold text-slate-900">No hay pedidos</h3>
+            <h3 className="text-lg font-black text-foreground">No hay pedidos</h3>
+            <p className="text-sm text-muted-foreground/60 mt-1">
+              Creá el primer pedido con el botón +
+            </p>
           </div>
         )}
 
-        {/* LIST SECTION */}
-        <section className="space-y-4">
-          <div className="grid gap-3 md:gap-5 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
-            {filteredOrders?.map((order) => (
-              <OrderCard
-                key={order.orderId}
-                id={order.orderId}
-                localName={order.localName ?? "Cliente Local"}
-                status={order.status}
-                createdAt={order.createdAt}
-                items={order.lines.map((item) => ({
-                  name: item.productName ?? "Producto",
-                  quantity: item.quantity,
-                  pricePerUnit: item.pricePerUnit,
-                  buyPriceSupplier: item.buyPriceSupplier,
-                }))}
-                onEdit={(orderId) => navigate(`/order/${orderId}/edit`)}
-                onDelete={() => handleDelete(order)}
-                onStatusChange={handleStatusChange}
-                isSelected={value === String(order.orderId)}
-                isUpdating={updatingOrderId === order.orderId}
-              />
-            ))}
+        {!isPending && !error && data?.orders && filteredOrders.length === 0 && search && (
+          <div className="flex flex-col items-center justify-center py-12 px-6 text-center border border-dashed border-border/40 rounded-2xl mt-4">
+            <h3 className="text-base font-black text-foreground">Sin resultados</h3>
+            <p className="text-sm text-muted-foreground/60 mt-1">
+              No hay pedidos que coincidan con "{search}"
+            </p>
+            <button
+              onClick={() => setSearch("")}
+              className="mt-4 text-sm font-bold text-crimson hover:text-crimson/80 transition-colors"
+            >
+              Limpiar búsqueda
+            </button>
           </div>
+        )}
+
+        {/* LIST */}
+        <section className="flex flex-col gap-3">
+          {filteredOrders.map((order) => (
+            <OrderCard
+              key={order.orderId}
+              id={order.orderId}
+              localName={order.localName ?? "Cliente Local"}
+              status={order.status}
+              createdAt={order.createdAt}
+              items={order.lines.map((item) => ({
+                name: item.productName ?? "Producto",
+                quantity: item.quantity,
+                pricePerUnit: item.pricePerUnit,
+                buyPriceSupplier: item.buyPriceSupplier,
+              }))}
+              onEdit={(orderId) => navigate(`/order/${orderId}/edit`)}
+              onDelete={() => handleDelete(order)}
+              onStatusChange={handleStatusChange}
+              isSelected={false}
+              isUpdating={updatingOrderId === order.orderId}
+            />
+          ))}
         </section>
       </div>
     </div>

@@ -1,7 +1,6 @@
 import {
   ArrowUpRight,
   BarChart3,
-  ClipboardList,
   Package,
   Package2,
   ShoppingBag,
@@ -62,14 +61,9 @@ export default function Home() {
     queryFn: getRevenue,
   });
 
-  const today = new Date().toISOString().split("T")[0];
   const currentMonth = new Date().toISOString().slice(0, 7);
 
   const orders = ordersData?.orders ?? [];
-
-  const ordersToday = orders.filter((o) =>
-    o.createdAt.startsWith(today),
-  ).length;
 
   const currentMonthRevenue =
     revenueData?.revenue
@@ -94,13 +88,6 @@ export default function Home() {
     .filter((o) => o.status === "pending")
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
-
-  const pendingOrders = orders.filter((o) => o.status === "pending").length;
-
-  const now = new Date();
-  const hour = now.getHours();
-  const greeting =
-    hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
 
   return (
     <div className="min-h-screen bg-background selection:bg-crimson/30">
