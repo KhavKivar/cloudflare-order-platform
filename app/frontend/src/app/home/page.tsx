@@ -143,39 +143,6 @@ export default function Home() {
           </Card>
         </div>
 
-        {/* SECONDARY STATS — 2 col */}
-        <div className="grid grid-cols-2 gap-3">
-          <Card className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm group hover:border-crimson/30 transition-colors">
-            <CardContent className="p-4 sm:p-5">
-              <div className="flex items-center gap-1.5 mb-3 text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/60 group-hover:text-crimson/70 transition-colors">
-                <ClipboardList className="h-3.5 w-3.5 shrink-0" />
-                <span>Pedidos hoy</span>
-              </div>
-              <p className="text-3xl font-black tracking-tighter text-foreground">
-                {ordersToday}
-              </p>
-              <p className="mt-1 text-[10px] font-bold text-muted-foreground/50">
-                Despachos del día
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm group hover:border-amber-500/30 transition-colors">
-            <CardContent className="p-4 sm:p-5">
-              <div className="flex items-center gap-1.5 mb-3 text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/60 group-hover:text-amber-500/70 transition-colors">
-                <Package2 className="h-3.5 w-3.5 shrink-0" />
-                <span>Pendientes</span>
-              </div>
-              <p className="text-3xl font-black tracking-tighter text-foreground">
-                {pendingOrders}
-              </p>
-              <p className="mt-1 text-[10px] font-bold text-muted-foreground/50">
-                Sin entregar
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* NAVIGATION CARDS */}
         <div className="grid grid-cols-2 gap-3">
           {[
