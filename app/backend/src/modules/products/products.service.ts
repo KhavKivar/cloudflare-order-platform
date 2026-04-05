@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { DrizzleD1Database } from "drizzle-orm/d1";
 import { products } from "../../db/schema.js";
-import { CreateProductInput, Product } from "./products.schema.js";
+import { CreateProductInput, Product, UpdateProductInput } from "./products.schema.js";
 
 export class ProductService {
   constructor(private readonly db: DrizzleD1Database<any>) {}
@@ -28,5 +28,19 @@ export class ProductService {
       .where(eq(products.id, id))
       .all();
     return (product as Product) ?? null;
+  }
+
+  async updateProduct(id: number, input: UpdateProductInput): Promise<Product | null> {
+    const fields = Object.fromEntries(
+      Object.entries(input).filter(([_, v]) => v !== undefined),
+    );
+    if (Object.keys(fields).length === 0) return this.getProductById(id);
+    const [updated] = await this.db
+      .update(products)
+      .set(fields)
+      .where(eq(products.id, id))
+      .returning()
+      .execute();
+    return (updated as Product) ?? null;
   }
 }

@@ -8,6 +8,9 @@ import Layout from "./layout";
 import OrderEditPage from "./order/edit/page";
 import OrderCreatePage from "./order/new/page";
 import OrderListPage from "./order/page";
+import ProductListPage from "./product/page";
+import ProductCreatePage from "./product/new/page";
+import ProductEditPage from "./product/edit/page";
 import PurchaseOrderDetailPage from "./purchase-order/detail/page";
 import PurchaseOrderNewLayout from "./purchase-order/new/page";
 import PurchaseOrderSelectPage from "./purchase-order/new/select/page";
@@ -34,6 +37,9 @@ function App() {
 
             <Route path="/client" element={<ClientListPage />} />
             <Route path="/client/new" element={<ClientCreatePage />} />
+            <Route path="/product" element={<ProductListPage />} />
+            <Route path="/product/new" element={<ProductCreatePage />} />
+            <Route path="/product/:id/edit" element={<ProductEditPage />} />
             <Route path="/purchase-order" element={<PurchaseOrderListPage />} />
             <Route
               path="/purchase-order/:id"

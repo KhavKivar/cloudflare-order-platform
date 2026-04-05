@@ -1,7 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { Outlet, useLocation } from "react-router";
 
-import MobileNav from "@/components/mobile-nav/mobile-nav";
 import Navbar from "@/components/navbar/navbar";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -40,6 +39,15 @@ export default function Layout() {
   }, [location.key]);
 
   const navbarConfig = useMemo<NavbarConfig>(() => {
+    if (
+      location.pathname.startsWith("/product/") &&
+      location.pathname.endsWith("/edit")
+    ) {
+      return {
+        title: "Editar producto",
+        showBack: true,
+      };
+    }
     if (
       location.pathname.startsWith("/order/") &&
       location.pathname.endsWith("/edit")
@@ -99,6 +107,17 @@ export default function Layout() {
           showBack: true,
           backTo: "/",
         };
+      case "/product":
+        return {
+          title: "Productos",
+          showBack: true,
+          backTo: "/",
+        };
+      case "/product/new":
+        return {
+          title: "Nuevo producto",
+          showBack: true,
+        };
       case "/stats":
         return {
           title: "Estadísticas",
@@ -114,7 +133,7 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen">
-      <Toaster position="top-center" />
+      <Toaster position="bottom-center" />
       <Navbar
         title={navbarConfig.title}
         subtitle={navbarConfig.subtitle}
@@ -125,7 +144,6 @@ export default function Layout() {
       <main>
         <Outlet />
       </main>
-      <MobileNav />
     </div>
   );
 }
