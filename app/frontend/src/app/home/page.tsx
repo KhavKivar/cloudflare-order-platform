@@ -182,6 +182,15 @@ export default function Home() {
               bgClass: "bg-purple-500/10 border-purple-500/20",
               hoverClass: "hover:border-purple-500/30",
             },
+            {
+              href: "/product",
+              icon: Package2,
+              label: "Productos",
+              description: "Catálogo & precios",
+              iconClass: "text-orange-500",
+              bgClass: "bg-orange-500/10 border-orange-500/20",
+              hoverClass: "hover:border-orange-500/30",
+            },
           ].map((item) => (
             <button
               key={item.href}
