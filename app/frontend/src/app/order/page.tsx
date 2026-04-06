@@ -26,6 +26,7 @@ export default function OrdersListPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("pending");
   const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
+  const [pinnedIds, setPinnedIds] = useState<Set<number>>(new Set());
 
   const { data, isPending, error } = useQuery<OrdersResponse>({
     queryKey: ["orders"],
@@ -36,7 +37,7 @@ export default function OrdersListPage() {
     if (!data?.orders) return [];
     let orders = data.orders;
     if (statusFilter !== "all") {
-      orders = orders.filter((o) => o.status === statusFilter);
+      orders = orders.filter((o) => o.status === statusFilter || pinnedIds.has(o.orderId));
     }
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -47,7 +48,7 @@ export default function OrdersListPage() {
       );
     }
     return orders;
-  }, [data, search, statusFilter]);
+  }, [data, search, statusFilter, pinnedIds]);
 
   const deleteMutation = useMutation({
     mutationFn: (payload: { orderId: number; order: OrderListItem }) =>
@@ -86,7 +87,13 @@ export default function OrdersListPage() {
 
   const handleStatusChange = (orderId: number, newStatus: OrderStatus) => {
     setUpdatingOrderId(orderId);
+    setPinnedIds((prev) => new Set(prev).add(orderId));
     updateStatusMutation.mutate({ orderId, status: newStatus });
+  };
+
+  const handleFilterChange = (value: string) => {
+    setStatusFilter(value);
+    setPinnedIds(new Set());
   };
 
   return (
@@ -127,7 +134,7 @@ export default function OrdersListPage() {
             ].map((f) => (
               <button
                 key={f.value}
-                onClick={() => setStatusFilter(f.value)}
+                onClick={() => handleFilterChange(f.value)}
                 className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-black transition-colors border ${
                   statusFilter === f.value
                     ? "bg-primary text-primary-foreground border-primary"
