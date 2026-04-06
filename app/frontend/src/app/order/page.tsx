@@ -24,7 +24,7 @@ export default function OrdersListPage() {
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("pending");
+  const [statusFilter, setStatusFilter] = useState<string>("active");
   const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
   const [pinnedIds, setPinnedIds] = useState<Set<number>>(new Set());
 
@@ -36,7 +36,9 @@ export default function OrdersListPage() {
   const filteredOrders = useMemo(() => {
     if (!data?.orders) return [];
     let orders = data.orders;
-    if (statusFilter !== "all") {
+    if (statusFilter === "active") {
+      orders = orders.filter((o) => o.status !== "delivered_paid" || pinnedIds.has(o.orderId));
+    } else if (statusFilter !== "all") {
       orders = orders.filter((o) => o.status === statusFilter || pinnedIds.has(o.orderId));
     }
     if (search.trim()) {
@@ -128,6 +130,7 @@ export default function OrdersListPage() {
         <div className="-mx-4 sm:-mx-6">
           <div className="flex gap-2 overflow-x-auto no-scrollbar px-4 sm:px-6 pb-0.5">
             {[
+              { value: "active",    label: "Activos" },
               { value: "all",       label: "Todos" },
               { value: "pending",   label: "Pendiente" },
               { value: "delivered", label: "Entregado" },
