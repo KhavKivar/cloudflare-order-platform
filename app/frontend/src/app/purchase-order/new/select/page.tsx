@@ -160,7 +160,7 @@ export default function PurchaseOrderSelectPage() {
           <Button
             onClick={handleGoToSummary}
             disabled={selectedOrders.length === 0}
-            className="flex-1 h-12 rounded-xl bg-crimson hover:bg-crimson/90 text-white font-bold shadow-lg shadow-crimson/20 disabled:opacity-40"
+            className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/20 disabled:opacity-40"
           >
             Siguiente
             <ArrowRight className="ml-2 size-4" />

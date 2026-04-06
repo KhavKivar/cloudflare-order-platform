@@ -5,17 +5,23 @@ import { purchaseOrders } from "../../db/schema.js";
 export const purchaseOrderSchema = createSelectSchema(purchaseOrders);
 
 export const purchaseOrderLineItemSchema = z.object({
+  productId: z.number().nullable(),
   buyPriceSupplier: z.number(),
   sellPriceClient: z.number(),
   quantity: z.number(),
   lineTotal: z.number(),
-  productName: z.string(),
+  productName: z.string().nullable(),
 });
 
 export const purchaseOrderListItemSchema = z.object({
   purchaseOrderId: z.number(),
   createdAt: z.string(),
+  status: z.enum(["pending", "received", "paid", "cancelled"]),
   lines: z.array(purchaseOrderLineItemSchema),
+});
+
+export const purchaseOrderStatusUpdateSchema = z.object({
+  status: z.enum(["pending", "received", "paid", "cancelled"]),
 });
 
 export const purchaseOrderDetailLineSchema = z.object({
@@ -58,3 +64,4 @@ export type PurchaseOrderDetailLine = z.infer<typeof purchaseOrderDetailLineSche
 export type PurchaseOrderDetailOrder = z.infer<typeof purchaseOrderDetailOrderSchema>;
 export type PurchaseOrderDetail = z.infer<typeof purchaseOrderDetailSchema>;
 export type CreatePurchaseOrderInput = z.infer<typeof purchaseOrderCreateSchema>;
+export type PurchaseOrderStatusUpdateInput = z.infer<typeof purchaseOrderStatusUpdateSchema>;

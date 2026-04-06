@@ -30,7 +30,7 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-warning/15 text-warning border-warning/20",
   paid: "bg-success/15 text-success border-success/20",
-  delivered: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+  delivered: "bg-emerald/10 text-emerald border-emerald/20",
   delivered_paid: "bg-success/15 text-success border-success/20",
   cancelled: "bg-destructive/10 text-destructive border-destructive/20",
 };
@@ -90,13 +90,13 @@ export default function Home() {
     .slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-background selection:bg-crimson/30">
+    <div className="min-h-screen bg-background selection:bg-primary/30">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 px-4 pt-6 pb-4 sm:gap-8 sm:px-6 sm:pt-10">
 
         {/* HERO — Ventas del Mes */}
         <div>
           <Card className="relative overflow-hidden rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm">
-            <div className="absolute inset-0 bg-gradient-to-br from-crimson/8 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-transparent pointer-events-none" />
             <CardContent className="p-5 sm:p-7">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
@@ -122,8 +122,8 @@ export default function Home() {
                     </div>
                   )}
                 </div>
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-crimson/10 border border-crimson/20">
-                  <TrendingUp className="h-6 w-6 text-crimson" />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
+                  <TrendingUp className="h-6 w-6 text-primary" />
                 </div>
               </div>
             </CardContent>
@@ -138,9 +138,9 @@ export default function Home() {
               icon: ShoppingBag,
               label: "Ventas",
               description: "Crear & cobrar",
-              iconClass: "text-crimson",
-              bgClass: "bg-crimson/10 border-crimson/20",
-              hoverClass: "hover:border-crimson/30",
+              iconClass: "text-primary",
+              bgClass: "bg-primary/10 border-primary/20",
+              hoverClass: "hover:border-primary/30",
             },
             {
               href: "/purchase-order",
@@ -212,7 +212,7 @@ export default function Home() {
               </h3>
               <button
                 onClick={() => navigate("/order")}
-                className="flex items-center gap-1 text-[11px] font-bold text-crimson hover:text-crimson/80 transition-colors"
+                className="flex items-center gap-1 text-[11px] font-bold text-primary hover:text-primary/80 transition-colors"
               >
                 Ver todos
                 <ArrowUpRight className="h-3.5 w-3.5" />
@@ -234,11 +234,10 @@ export default function Home() {
                     0,
                   );
                   return (
-                    <button
+                    <div
                       key={order.orderId}
-                      onClick={() => navigate(`/order/${order.orderId}/edit`)}
                       className={cn(
-                        "w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/30 active:bg-muted/50",
+                        "flex items-center justify-between gap-3 px-4 py-3.5",
                         i !== 0 && "border-t border-border/40",
                       )}
                     >
@@ -272,7 +271,7 @@ export default function Home() {
                           </Badge>
                         </div>
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </CardContent>

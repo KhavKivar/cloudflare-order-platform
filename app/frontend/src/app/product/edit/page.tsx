@@ -285,7 +285,7 @@ export default function ProductEditPage() {
         <button
           onClick={handleSubmit((data) => mutate(data))}
           disabled={isPending}
-          className="w-full h-[58px] rounded-2xl bg-crimson hover:bg-crimson/90 disabled:opacity-50 text-white font-black text-[15px] shadow-[0_8px_25px_rgba(216,19,53,0.25)] transition-all flex items-center justify-center gap-2"
+          className="w-full h-[58px] rounded-2xl bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-black text-[15px] shadow-[0_8px_25px_rgba(216,19,53,0.25)] transition-all flex items-center justify-center gap-2"
         >
           {isPending ? (
             <Loader2 className="h-5 w-5 animate-spin" />

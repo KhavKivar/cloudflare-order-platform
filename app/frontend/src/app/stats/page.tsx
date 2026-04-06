@@ -84,7 +84,7 @@ const normalizeRevenue = (entries: Revenue[]) => {
   });
 
   const weeklyGains = Array.from(weeklyMap.values()).sort(
-    (a, b) => a.start.getTime() - b.start.getTime(),
+    (a, b) => b.start.getTime() - a.start.getTime(),
   );
 
   const totalRevenue = dailyGains.reduce((acc, curr) => acc + curr.gain, 0);
@@ -172,13 +172,13 @@ export default function StatsPage() {
             <div className="grid grid-cols-2 gap-3">
               {/* Total — full width */}
               <div className="col-span-2 relative overflow-hidden rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm p-5">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-crimson/10 rounded-full blur-2xl -mr-8 -mt-8 pointer-events-none" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -mr-8 -mt-8 pointer-events-none" />
                 <div className="flex items-start justify-between mb-1">
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
                     Ingreso Total
                   </span>
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-crimson/10 border border-crimson/20">
-                    <DollarSign className="h-3.5 w-3.5 text-crimson" />
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 border border-primary/20">
+                    <DollarSign className="h-3.5 w-3.5 text-primary" />
                   </div>
                 </div>
                 <div className="text-3xl font-black text-foreground tracking-tighter">
@@ -245,8 +245,8 @@ export default function StatsPage() {
                         className={cn(
                           "h-full rounded-full transition-all duration-500",
                           week.gain === Math.max(...weeklyGains.map((w) => w.gain))
-                            ? "bg-gradient-to-r from-crimson to-orange-500"
-                            : "bg-gradient-to-r from-crimson/70 to-orange-500/70",
+                            ? "bg-gradient-to-r from-primary to-orange-500"
+                            : "bg-gradient-to-r from-primary/70 to-orange-500/70",
                         )}
                         style={{ width: `${(week.gain / maxWeeklyGain) * 100}%` }}
                       />

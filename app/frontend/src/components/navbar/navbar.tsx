@@ -47,14 +47,14 @@ export default function Navbar({
               variant="ghost"
               size="icon"
               onClick={handleBack}
-              className="h-10 w-10 rounded-2xl hover:bg-crimson/10 hover:text-crimson/80 transition-all border border-border/50"
+              className="h-10 w-10 rounded-2xl hover:bg-primary/10 hover:text-primary/80 transition-all border border-border/50"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
           <div className="min-w-0">
             {subtitle && (
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-crimson mb-1">
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary mb-1">
                 {subtitle}
               </p>
             )}
@@ -69,7 +69,7 @@ export default function Navbar({
             variant="ghost"
             size="icon"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="h-10 w-10 rounded-2xl hover:bg-crimson/10 hover:text-crimson/80 transition-all border border-border/50"
+            className="h-10 w-10 rounded-2xl hover:bg-primary/10 hover:text-primary/80 transition-all border border-border/50"
             aria-label="Toggle theme"
           >
             <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />

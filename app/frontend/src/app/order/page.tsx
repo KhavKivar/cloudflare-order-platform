@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { useState, useMemo } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { deleteOrder } from "@/features/orders/api/delete-order";
 import {
   getOrders,
@@ -18,7 +20,6 @@ import {
   updateOrderStatus,
 } from "@/features/orders/api/update-order-status";
 import OrderCard from "@/features/orders/components/OrderCard";
-import { cn } from "@/lib/utils";
 
 export default function OrdersListPage() {
   const navigate = useNavigate();
@@ -90,11 +91,11 @@ export default function OrdersListPage() {
         {/* HEADER */}
         <header className="flex items-center justify-between gap-3 mb-1">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-crimson/10 border border-crimson/20">
-              <ShoppingBag className="h-5 w-5 text-crimson" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
+              <ShoppingBag className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-black tracking-tight text-foreground leading-none">
+              <h1 className="text-2xl font-black tracking-tight text-foreground leading-none">
                 Lista de Pedidos
               </h1>
               <p className="text-xs font-medium text-muted-foreground/60 mt-0.5">
@@ -105,7 +106,7 @@ export default function OrdersListPage() {
           <Button
             onClick={() => navigate("/order/new")}
             size="icon"
-            className="h-10 w-10 rounded-full bg-crimson hover:bg-crimson/90 text-white shrink-0 shadow-lg shadow-crimson/20"
+            className="h-10 w-10 rounded-full shrink-0 shadow-lg shadow-primary/20"
           >
             <Plus className="h-5 w-5" />
           </Button>
@@ -113,17 +114,13 @@ export default function OrdersListPage() {
 
         {/* SEARCH */}
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
-          <input
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 z-10 pointer-events-none" />
+          <Input
             type="text"
             placeholder="Buscar por cliente o ID..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className={cn(
-              "w-full rounded-full bg-muted/40 border border-border/40 py-3 pl-11 pr-10",
-              "text-sm text-foreground placeholder:text-muted-foreground/40",
-              "outline-none focus:border-border/80 focus:bg-muted/60 transition-all",
-            )}
+            className="rounded-full bg-muted/40 border-border/40 pl-11 pr-10 h-11 focus-visible:ring-primary/30 focus-visible:border-border/80"
           />
           {search && (
             <button
@@ -137,9 +134,23 @@ export default function OrdersListPage() {
 
         {/* FEEDBACK STATES */}
         {isPending && (
-          <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
-            <div className="size-10 animate-spin rounded-full border-4 border-border border-t-crimson mb-4" />
-            <p className="font-bold tracking-tight text-sm">Cargando pedidos...</p>
+          <div className="flex flex-col gap-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="rounded-2xl border border-border/60 bg-card p-3.5 space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-2.5 w-16" />
+                    <Skeleton className="h-5 w-36" />
+                  </div>
+                  <Skeleton className="h-7 w-20 rounded-full" />
+                </div>
+                <Skeleton className="h-16 w-full rounded-xl" />
+                <div className="flex justify-between items-center pt-1">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-7 w-28" />
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -172,7 +183,7 @@ export default function OrdersListPage() {
             </p>
             <button
               onClick={() => setSearch("")}
-              className="mt-4 text-sm font-bold text-crimson hover:text-crimson/80 transition-colors"
+              className="mt-4 text-sm font-bold text-primary hover:text-primary/80 transition-colors"
             >
               Limpiar búsqueda
             </button>

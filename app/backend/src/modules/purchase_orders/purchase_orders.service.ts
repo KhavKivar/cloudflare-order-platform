@@ -12,6 +12,7 @@ import {
   OrderPurchaseListItem,
   PurchaseOrderDetail,
   PurchaseOrderDetailOrder,
+  PurchaseOrderStatusUpdateInput,
 } from "./purchase_order.schema.js";
 
 export class PurchaseOrderService {
@@ -22,6 +23,8 @@ export class PurchaseOrderService {
       .select({
         createdAt: purchaseOrders.createdAt,
         purchaseOrderId: purchaseOrders.id,
+        status: purchaseOrders.status,
+        productId: orderLines.productId,
         productName: products.name,
         orderId: orders.id,
         sellPriceClient: orderLines.pricePerUnit,
@@ -34,7 +37,7 @@ export class PurchaseOrderService {
       .leftJoin(orderLines, eq(orders.id, orderLines.orderId))
       .leftJoin(products, eq(orderLines.productId, products.id))
       .all();
-    
+
     const ordersMap = new Map<number, OrderPurchaseListItem>();
 
     for (const row of rows) {
@@ -43,13 +46,13 @@ export class PurchaseOrderService {
         purchaseOrder = {
           purchaseOrderId: row.purchaseOrderId,
           createdAt: row.createdAt,
+          status: (row.status ?? "pending") as OrderPurchaseListItem["status"],
           lines: [],
         };
         ordersMap.set(row.purchaseOrderId, purchaseOrder);
       }
-      
+
       if (
-        !row.productName ||
         !row.lineTotal ||
         !row.buyPriceSupplier ||
         !row.sellPriceClient ||
@@ -59,6 +62,7 @@ export class PurchaseOrderService {
       }
 
       purchaseOrder.lines.push({
+        productId: row.productId,
         productName: row.productName,
         lineTotal: row.lineTotal,
         buyPriceSupplier: row.buyPriceSupplier,
@@ -68,6 +72,20 @@ export class PurchaseOrderService {
     }
 
     return Array.from(ordersMap.values());
+  }
+
+  async updatePurchaseOrderStatus(
+    purchaseOrderId: number,
+    input: PurchaseOrderStatusUpdateInput,
+  ) {
+    const result = await this.db
+      .update(purchaseOrders)
+      .set({ status: input.status })
+      .where(eq(purchaseOrders.id, purchaseOrderId))
+      .returning();
+
+    if (result.length === 0) return null;
+    return result[0];
   }
 
   async updatePurchaseOrder(

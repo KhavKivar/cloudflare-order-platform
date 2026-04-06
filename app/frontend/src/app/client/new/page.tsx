@@ -196,8 +196,8 @@ export default function NewClientPage() {
           disabled={isPending}
           className={cn(
             "pointer-events-auto w-full h-[58px] rounded-2xl text-white text-[16px] font-bold tracking-wide",
-            "bg-crimson hover:bg-crimson/90 active:scale-[0.98]",
-            "shadow-[0_8px_25px_rgba(216,19,53,0.25)] border border-crimson/40",
+            "bg-primary hover:bg-primary/90 active:scale-[0.98]",
+            "shadow-[0_8px_25px_rgba(216,19,53,0.25)] border border-primary/40",
             "transition-all duration-200 flex items-center justify-center gap-2.5",
             isPending && "opacity-80 pointer-events-none",
           )}

@@ -30,11 +30,11 @@ export default function MobileNav() {
               onClick={() => navigate(item.href)}
               className={cn(
                 "relative flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl min-w-[56px] min-h-[44px] transition-all duration-200 touch-manipulation",
-                active ? "text-crimson" : "text-muted-foreground",
+                active ? "text-primary" : "text-muted-foreground",
               )}
             >
               {active && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-crimson" />
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-primary" />
               )}
               <item.icon
                 className={cn(
@@ -45,7 +45,7 @@ export default function MobileNav() {
               <span
                 className={cn(
                   "text-[10px] font-bold tracking-wide",
-                  active ? "text-crimson" : "text-muted-foreground/70",
+                  active ? "text-primary" : "text-muted-foreground/70",
                 )}
               >
                 {item.label}

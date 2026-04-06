@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   Calendar,
+  ChevronDown,
   Loader2,
   Package,
   Pencil,
@@ -23,7 +24,27 @@ import {
 import OrderCard from "@/features/orders/components/OrderCard";
 import { getPurchaseOrder } from "@/features/purchase-orders/api/get-purchase-order";
 import { updatePurchaseOrder } from "@/features/purchase-orders/api/update-purchase-order";
+import {
+  updatePurchaseOrderStatus,
+  type PurchaseOrderStatus,
+} from "@/features/purchase-orders/api/update-purchase-order-status";
+import { cn } from "@/lib/utils";
 import { formatChileanPeso } from "@/utils/format-currency";
+
+const STATUS_CONFIG: Record<string, { label: string; style: string }> = {
+  pending:   { label: "Pendiente", style: "bg-amber-500/20 text-amber-400 border border-amber-500/20" },
+  received:  { label: "Recibido",  style: "bg-blue-500/10 text-blue-400 border border-blue-500/20" },
+  paid:      { label: "Pagado",    style: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" },
+  cancelled: { label: "Cancelado", style: "bg-muted text-muted-foreground border border-border" },
+};
+
+const SWITCHABLE_STATUSES = new Set(["pending", "received", "paid"]);
+
+const SEGMENTED_OPTIONS: { value: PurchaseOrderStatus; label: string; activeClass: string }[] = [
+  { value: "pending",  label: "Pendiente", activeClass: "bg-warning/15 text-warning border-warning/20" },
+  { value: "received", label: "Recibido",  activeClass: "bg-primary/10 text-primary border-primary/20" },
+  { value: "paid",     label: "Pagado",    activeClass: "bg-emerald/10 text-emerald border-emerald/20" },
+];
 
 // --- TYPES & HELPERS ---
 
@@ -72,6 +93,18 @@ export default function PurchaseOrderDetailPage() {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
+  const [showStatusStrip, setShowStatusStrip] = useState(false);
+
+  const updateStatusMutation = useMutation({
+    mutationFn: (status: PurchaseOrderStatus) =>
+      updatePurchaseOrderStatus(purchaseOrderId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchase-order", purchaseOrderId] });
+      queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+      setShowStatusStrip(false);
+    },
+    onError: () => toast.error("No se pudo actualizar el estado."),
+  });
 
   const { data: purchaseOrder, isPending, error } = useQuery({
     queryKey: ["purchase-order", purchaseOrderId],
@@ -180,7 +213,7 @@ export default function PurchaseOrderDetailPage() {
         {/* LOADING */}
         {isPending && (
           <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
-            <div className="size-10 animate-spin rounded-full border-4 border-border border-t-crimson mb-4" />
+            <div className="size-10 animate-spin rounded-full border-4 border-border border-t-primary mb-4" />
             <p className="font-bold text-sm">Cargando orden...</p>
           </div>
         )}
@@ -214,10 +247,47 @@ export default function PurchaseOrderDetailPage() {
                     <h1 className="text-xl font-black tracking-tight text-foreground leading-none">
                       Orden #{purchaseOrder.purchaseOrderId}
                     </h1>
-                    <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-400 border border-emerald-500/20">
-                      Activa
-                    </span>
+                    {SWITCHABLE_STATUSES.has(purchaseOrder.status) ? (
+                      <button
+                        className={cn(
+                          "flex items-center gap-1 rounded-md px-2 py-0.5 text-[9px] font-black uppercase tracking-wider transition-opacity",
+                          STATUS_CONFIG[purchaseOrder.status]?.style ?? STATUS_CONFIG.pending.style,
+                          updateStatusMutation.isPending && "opacity-50",
+                        )}
+                        onClick={() => setShowStatusStrip((v) => !v)}
+                      >
+                        {STATUS_CONFIG[purchaseOrder.status]?.label ?? "Pendiente"}
+                        <ChevronDown className={cn("h-2.5 w-2.5 transition-transform", showStatusStrip && "rotate-180")} />
+                      </button>
+                    ) : (
+                      <span className={cn(
+                        "rounded-md px-2 py-0.5 text-[9px] font-black uppercase tracking-wider",
+                        STATUS_CONFIG[purchaseOrder.status]?.style ?? STATUS_CONFIG.pending.style,
+                      )}>
+                        {STATUS_CONFIG[purchaseOrder.status]?.label ?? "Pendiente"}
+                      </span>
+                    )}
                   </div>
+                  {showStatusStrip && (
+                    <div className="flex gap-1.5 mt-2 rounded-xl border border-border/30 bg-muted/20 p-1.5">
+                      {SEGMENTED_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          disabled={updateStatusMutation.isPending}
+                          onClick={() => updateStatusMutation.mutate(opt.value)}
+                          className={cn(
+                            "flex-1 rounded-lg py-1.5 text-[10px] font-black uppercase tracking-wider transition-all border",
+                            purchaseOrder.status === opt.value
+                              ? opt.activeClass
+                              : "border-transparent text-muted-foreground/50 hover:bg-muted/60 hover:text-foreground",
+                            updateStatusMutation.isPending && "opacity-50 cursor-not-allowed",
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground/50">
                     <Calendar className="h-3 w-3" />
                     <span>
@@ -334,18 +404,13 @@ export default function PurchaseOrderDetailPage() {
                           </span>
                         </div>
                         <div className="rounded-lg bg-muted/30 border border-border/20 px-3 py-1.5 divide-y divide-border/15">
-                          {order.lines.slice(0, 2).map((line, idx) => (
+                          {order.lines.map((line, idx) => (
                             <div key={idx} className="flex justify-between py-1.5 text-xs">
                               <span className="text-muted-foreground/60 truncate flex-1 pr-3">
                                 {line.quantity}x {line.productName}
                               </span>
                             </div>
                           ))}
-                          {order.lines.length > 2 && (
-                            <p className="py-1.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground/30">
-                              + {order.lines.length - 2} productos adicionales
-                            </p>
-                          )}
                         </div>
                       </div>
                     );
@@ -434,7 +499,7 @@ export default function PurchaseOrderDetailPage() {
               <Button
                 onClick={handleSaveChanges}
                 disabled={selectedOrderIds.length === 0 || updateMutation.isPending}
-                className="h-10 rounded-xl bg-crimson hover:bg-crimson/90 text-white font-bold shadow-lg shadow-crimson/20 disabled:opacity-40 gap-1.5"
+                className="h-10 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/20 disabled:opacity-40 gap-1.5"
               >
                 {updateMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

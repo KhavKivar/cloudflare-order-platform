@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Calendar,
+  ChevronDown,
   ChevronRight,
   Copy,
   Loader2,
@@ -9,6 +10,7 @@ import {
   Receipt,
   Trash2,
 } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 
@@ -29,8 +31,20 @@ import {
   type PurchaseOrderLine,
   type PurchaseOrderListItem,
 } from "@/features/purchase-orders/api/get-purchase-orders";
+import {
+  updatePurchaseOrderStatus,
+  type PurchaseOrderStatus,
+} from "@/features/purchase-orders/api/update-purchase-order-status";
 import { cn } from "@/lib/utils";
 import { formatChileanPeso } from "@/utils/format-currency";
+
+const SWITCHABLE_STATUSES = new Set(["pending", "received", "paid"]);
+
+const SEGMENTED_OPTIONS: { value: PurchaseOrderStatus; label: string; activeClass: string }[] = [
+  { value: "pending",  label: "Pendiente", activeClass: "bg-warning/15 text-warning border-warning/20" },
+  { value: "received", label: "Recibido",  activeClass: "bg-primary/10 text-primary border-primary/20" },
+  { value: "paid",     label: "Pagado",    activeClass: "bg-emerald/10 text-emerald border-emerald/20" },
+];
 
 const STATUS_CONFIG: Record<string, { label: string; style: string; topBorder: string }> = {
   pending: {
@@ -82,6 +96,26 @@ export default function PurchaseOrdersListPage() {
   const handleDelete = (orderId: number) => {
     if (deleteMutation.isPending) return;
     deleteMutation.mutate(orderId);
+  };
+
+  const [openStripId, setOpenStripId] = useState<number | null>(null);
+  const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: PurchaseOrderStatus }) =>
+      updatePurchaseOrderStatus(id, status),
+    onMutate: ({ id }) => setUpdatingOrderId(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+      setOpenStripId(null);
+    },
+    onError: () => toast.error("No se pudo actualizar el estado."),
+    onSettled: () => setUpdatingOrderId(null),
+  });
+
+  const handleStatusChange = (orderId: number, status: PurchaseOrderStatus) => {
+    if (updatingOrderId) return;
+    updateStatusMutation.mutate({ id: orderId, status });
   };
 
   const handleCopy = (order: PurchaseOrderListItem, total: number) => {
@@ -141,7 +175,7 @@ export default function PurchaseOrdersListPage() {
           <Button
             onClick={() => navigate("/purchase-order/new")}
             size="icon"
-            className="h-10 w-10 rounded-full bg-crimson hover:bg-crimson/90 text-white shrink-0 shadow-lg shadow-crimson/20"
+            className="h-10 w-10 rounded-full bg-primary hover:bg-primary/90 text-white shrink-0 shadow-lg shadow-primary/20"
           >
             <Plus className="h-5 w-5" />
           </Button>
@@ -150,7 +184,7 @@ export default function PurchaseOrdersListPage() {
         {/* FEEDBACK STATES */}
         {isPending && (
           <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
-            <div className="size-10 animate-spin rounded-full border-4 border-border border-t-crimson mb-4" />
+            <div className="size-10 animate-spin rounded-full border-4 border-border border-t-primary mb-4" />
             <p className="font-bold tracking-tight text-sm">Cargando historial...</p>
           </div>
         )}
@@ -183,8 +217,11 @@ export default function PurchaseOrdersListPage() {
               (total, line) => total + line.buyPriceSupplier * line.quantity,
               0,
             );
-            const statusKey = "pending";
-            const statusInfo = STATUS_CONFIG[statusKey];
+            const statusKey = order.status ?? "pending";
+            const statusInfo = STATUS_CONFIG[statusKey] ?? STATUS_CONFIG.pending;
+            const isSwitchable = SWITCHABLE_STATUSES.has(statusKey);
+            const isStripOpen = openStripId === order.purchaseOrderId;
+            const isUpdating = updatingOrderId === order.purchaseOrderId;
 
             return (
               <article
@@ -202,14 +239,31 @@ export default function PurchaseOrdersListPage() {
                         ID: #{order.purchaseOrderId}
                       </span>
                       <div className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            "rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wider",
-                            statusInfo.style,
-                          )}
-                        >
-                          {statusInfo.label}
-                        </span>
+                        {isSwitchable ? (
+                          <button
+                            className={cn(
+                              "flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wider transition-opacity",
+                              statusInfo.style,
+                              isUpdating && "opacity-50",
+                            )}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenStripId(isStripOpen ? null : order.purchaseOrderId);
+                            }}
+                          >
+                            {statusInfo.label}
+                            <ChevronDown className={cn("h-2.5 w-2.5 transition-transform", isStripOpen && "rotate-180")} />
+                          </button>
+                        ) : (
+                          <span
+                            className={cn(
+                              "rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wider",
+                              statusInfo.style,
+                            )}
+                          >
+                            {statusInfo.label}
+                          </span>
+                        )}
                         <span className="flex items-center gap-1 text-xs text-muted-foreground/50">
                           <Calendar className="h-3 w-3" />
                           {new Date(order.createdAt).toLocaleDateString("es-CL", {
@@ -291,6 +345,28 @@ export default function PurchaseOrdersListPage() {
                     </div>
                   )}
                 </div>
+
+                {/* STATUS STRIP */}
+                {isStripOpen && (
+                  <div className="mx-4 mb-3 flex gap-1.5 rounded-xl border border-border/30 bg-muted/20 p-1.5">
+                    {SEGMENTED_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        disabled={isUpdating}
+                        onClick={() => handleStatusChange(order.purchaseOrderId, opt.value)}
+                        className={cn(
+                          "flex-1 rounded-lg py-1.5 text-[10px] font-black uppercase tracking-wider transition-all border",
+                          statusKey === opt.value
+                            ? opt.activeClass
+                            : "border-transparent text-muted-foreground/50 hover:bg-muted/60 hover:text-foreground",
+                          isUpdating && "opacity-50 cursor-not-allowed",
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* FOOTER: TOTAL + ACTION */}
                 <div className="flex items-end justify-between px-4 pb-4 border-t border-border/30 pt-3">

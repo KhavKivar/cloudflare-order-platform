@@ -7,11 +7,13 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: 'Bricolage Grotesque', sans-serif;
+    --font-heading: 'Geist Variable', sans-serif;
     --font-sans: 'Geist Variable', sans-serif;
-    
-    /* Luxury Accents */
+
+    /* Brand Accents */
     --color-crimson: oklch(0.55 0.25 25);
+    --color-blue: oklch(0.55 0.18 250);
+    --color-emerald: oklch(0.65 0.17 162);
     --color-success: var(--success);
     --color-success-foreground: var(--success-foreground);
     --color-warning: var(--warning);
@@ -64,8 +66,8 @@
     --card-foreground: oklch(0.12 0 0);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.12 0 0);
-    --primary: oklch(0.12 0 0);
-    --primary-foreground: oklch(1 0 0);
+    --primary: oklch(0.55 0.18 250);
+    --primary-foreground: oklch(0.98 0 0);
     --secondary: oklch(0.96 0 0);
     --secondary-foreground: oklch(0.12 0 0);
     --muted: oklch(0.96 0 0);
@@ -75,7 +77,7 @@
     --destructive: oklch(0.55 0.22 25);
     --border: oklch(0.91 0 0);
     --input: oklch(0.91 0 0);
-    --ring: oklch(0.12 0 0);
+    --ring: oklch(0.55 0.18 250);
     --radius: 1rem;
     --success: oklch(0.65 0.17 150);
     --success-foreground: oklch(1 0 0);
@@ -106,8 +108,8 @@
     --card-foreground: oklch(0.97 0.005 265);
     --popover: oklch(0.12 0.010 265);
     --popover-foreground: oklch(0.97 0.005 265);
-    --primary: oklch(0.97 0.005 265);
-    --primary-foreground: oklch(0.08 0.008 265);
+    --primary: oklch(0.65 0.18 250);
+    --primary-foreground: oklch(0.98 0 0);
     --secondary: oklch(0.16 0.008 265);
     --secondary-foreground: oklch(0.97 0.005 265);
     --muted: oklch(0.16 0.008 265);
@@ -117,7 +119,7 @@
     --destructive: oklch(0.6 0.2 25);
     --border: oklch(0.20 0.006 265);
     --input: oklch(0.20 0.006 265);
-    --ring: oklch(0.55 0.25 25);
+    --ring: oklch(0.65 0.18 250);
 
     --chart-1: oklch(0.488 0.243 264.376);
     --chart-2: oklch(0.696 0.17 162.48);
@@ -137,7 +139,13 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
+    }
+  *:focus-visible {
+    @apply outline-2 outline-ring/50 outline-offset-2;
+    }
+  button, [role="button"] {
+    @apply outline-none;
     }
   body {
     @apply bg-background text-foreground;

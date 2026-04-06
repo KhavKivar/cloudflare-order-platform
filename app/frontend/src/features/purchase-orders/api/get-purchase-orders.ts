@@ -11,6 +11,7 @@ export type PurchaseOrderLine = {
 export type PurchaseOrderListItem = {
   purchaseOrderId: number;
   createdAt: string;
+  status: "pending" | "received" | "paid" | "cancelled";
   lines: PurchaseOrderLine[];
 };
 

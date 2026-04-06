@@ -49,7 +49,6 @@ import {
   UpdateClientDtoSchema,
   type UpdateClientDto,
 } from "@/features/client/api/update-client";
-import { cn } from "@/lib/utils";
 
 export default function ClientsAllPage() {
   const navigate = useNavigate();
@@ -180,8 +179,8 @@ export default function ClientsAllPage() {
         {/* HEADER */}
         <header className="flex items-center justify-between gap-3 mb-1">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20">
-              <Users className="h-5 w-5 text-blue-400" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
+              <Users className="h-5 w-5 text-primary" />
             </div>
             <div>
               <h1 className="text-xl font-black tracking-tight text-foreground leading-none">
@@ -195,7 +194,7 @@ export default function ClientsAllPage() {
           <Button
             onClick={() => navigate("/client/new")}
             size="icon"
-            className="h-10 w-10 rounded-full bg-crimson hover:bg-crimson/90 text-white shrink-0 shadow-lg shadow-crimson/20"
+            className="h-10 w-10 rounded-full bg-primary hover:bg-primary/90 text-white shrink-0 shadow-lg shadow-primary/20"
           >
             <Plus className="h-5 w-5" />
           </Button>
@@ -203,17 +202,13 @@ export default function ClientsAllPage() {
 
         {/* SEARCH */}
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
-          <input
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 pointer-events-none z-10" />
+          <Input
             type="text"
             placeholder="Buscar cliente..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className={cn(
-              "w-full rounded-full bg-muted/40 border border-border/40 py-3 pl-11 pr-10",
-              "text-sm text-foreground placeholder:text-muted-foreground/40",
-              "outline-none focus:border-border/80 focus:bg-muted/60 transition-all",
-            )}
+            className="rounded-full bg-muted/40 border-border/40 pl-11 pr-10 h-11 focus-visible:ring-primary/30 focus-visible:border-border/80"
           />
           {search && (
             <button
@@ -228,7 +223,7 @@ export default function ClientsAllPage() {
         {/* FEEDBACK STATES */}
         {isPending && (
           <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
-            <div className="size-10 animate-spin rounded-full border-4 border-border border-t-crimson mb-4" />
+            <div className="size-10 animate-spin rounded-full border-4 border-border border-t-primary mb-4" />
             <p className="font-bold tracking-tight text-sm">Cargando directorio...</p>
           </div>
         )}
@@ -262,7 +257,7 @@ export default function ClientsAllPage() {
             </p>
             <button
               onClick={() => setSearch("")}
-              className="mt-4 text-sm font-bold text-crimson hover:text-crimson/80 transition-colors"
+              className="mt-4 text-sm font-bold text-primary hover:text-primary/80 transition-colors"
             >
               Limpiar búsqueda
             </button>
@@ -276,8 +271,8 @@ export default function ClientsAllPage() {
               key={client.id}
               className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm p-4 transition-colors hover:border-border/80"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 border border-blue-500/20">
-                <Store className="h-5 w-5 text-blue-400" />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
+                <Store className="h-5 w-5 text-primary" />
               </div>
 
               <div className="flex-1 min-w-0">

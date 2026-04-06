@@ -200,7 +200,7 @@ export default function PurchaseOrderSummaryPage() {
                   "rounded-lg bg-muted/30 border border-border/20 px-3 py-1.5",
                   "divide-y divide-border/15",
                 )}>
-                  {order.lines.slice(0, 2).map((line) => (
+                  {order.lines.map((line) => (
                     <div
                       key={line.lineId}
                       className="flex items-center justify-between py-1.5 text-xs"
@@ -213,11 +213,6 @@ export default function PurchaseOrderSummaryPage() {
                       </span>
                     </div>
                   ))}
-                  {order.lines.length > 2 && (
-                    <p className="py-1.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground/30">
-                      + {order.lines.length - 2} productos adicionales
-                    </p>
-                  )}
                 </div>
               </div>
             );
@@ -239,7 +234,7 @@ export default function PurchaseOrderSummaryPage() {
           <Button
             onClick={handleCreatePurchaseOrder}
             disabled={purchaseItems.length === 0 || purchaseOrderMutation.isPending}
-            className="flex-1 h-12 rounded-xl bg-crimson hover:bg-crimson/90 text-white font-bold shadow-lg shadow-crimson/20 disabled:opacity-40"
+            className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/20 disabled:opacity-40"
           >
             {purchaseOrderMutation.isPending ? (
               <>

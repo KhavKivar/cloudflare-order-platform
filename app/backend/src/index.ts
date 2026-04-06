@@ -16,6 +16,7 @@ app.use(
         "https://www.vasvani.shop",
         "https://vasvani.vercel.app",
         "https://www.vasvani.vercel.app",
+        "https://ordersapp-frontend.pages.dev",
         "http://localhost:5173",
         "http://localhost:8788",
         "http://127.0.0.1:8788",

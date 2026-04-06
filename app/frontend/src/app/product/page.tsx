@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { toast } from "sonner";
 
+import { Input } from "@/components/ui/input";
 import { getProducts } from "@/features/products/api/get-products";
 import type { Product } from "@/features/products/api/product.schema";
 import { cn } from "@/lib/utils";
@@ -73,11 +74,11 @@ export default function ProductListPage() {
 
         {/* Header */}
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-500/10 border border-orange-500/20">
-            <Package className="h-5 w-5 text-orange-500" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
+            <Package className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-black text-foreground leading-tight">Productos</h1>
+            <h1 className="text-xl font-black text-foreground leading-tight">Productos</h1>
             {data && (
               <p className="text-[11px] text-muted-foreground/60 font-medium">
                 {data.products.length} {data.products.length === 1 ? "producto" : "productos"}
@@ -86,7 +87,7 @@ export default function ProductListPage() {
           </div>
           <button
             onClick={() => navigate("/product/new")}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-crimson hover:bg-crimson/90 text-white shadow-lg shadow-crimson/20 transition-colors"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-colors"
           >
             <Plus className="h-5 w-5" />
           </button>
@@ -94,20 +95,20 @@ export default function ProductListPage() {
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
-          <input
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 pointer-events-none z-10" />
+          <Input
             type="text"
             placeholder="Buscar por nombre o tipo..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-full bg-muted/40 border border-border/40 py-3 pl-11 pr-10 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/40"
+            className="rounded-full bg-muted/40 border-border/40 pl-11 pr-10 h-11 focus-visible:ring-primary/30 focus-visible:border-border/80"
           />
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted/60"
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted/60 text-muted-foreground/60 hover:text-foreground transition-colors"
             >
-              <X className="h-3.5 w-3.5 text-muted-foreground/50" />
+              <X className="h-3.5 w-3.5" />
             </button>
           )}
         </div>
@@ -133,7 +134,7 @@ export default function ProductListPage() {
                 <p className="text-sm font-semibold text-muted-foreground/60">Sin resultados</p>
                 <button
                   onClick={() => setSearch("")}
-                  className="text-xs text-orange-500 hover:text-orange-400 font-medium"
+                  className="text-xs text-primary hover:text-primary/80 font-medium"
                 >
                   Limpiar búsqueda
                 </button>

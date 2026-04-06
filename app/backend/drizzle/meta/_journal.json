@@ -22,6 +22,13 @@
       "when": 1775165190369,
       "tag": "0002_3rd",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1775348484805,
+      "tag": "0003_migrationvps",
+      "breakpoints": true
     }
   ]
 }

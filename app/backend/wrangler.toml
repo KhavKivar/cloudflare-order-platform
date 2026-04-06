@@ -5,5 +5,5 @@ compatibility_date = "2026-04-02"
 [[d1_databases]]
 binding = "DB"
 database_name = "order-db"
-database_id = "d8a71718-0b52-462f-859b-800bdcc8f6f9"
+database_id = "6dfdc7ae-8c7c-486d-8d57-e6643d0237e3"
 migrations_dir = "drizzle"

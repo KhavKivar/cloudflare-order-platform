@@ -53,17 +53,17 @@ const STATUS_LABELS: Record<OrderCardProps["status"], string> = {
 
 const STATUS_STYLES: Record<OrderCardProps["status"], string> = {
   pending: "bg-warning/15 text-warning",
-  paid: "bg-success/15 text-success",
-  delivered: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-  delivered_paid: "bg-success/15 text-success",
+  paid: "bg-primary/10 text-primary",
+  delivered: "bg-emerald/10 text-emerald",
+  delivered_paid: "bg-primary/10 text-primary",
   cancelled: "bg-destructive/10 text-destructive",
 };
 
 const STATUS_ACCENT: Record<OrderCardProps["status"], string> = {
   pending: "border-l-warning",
-  paid: "border-l-success",
-  delivered: "border-l-blue-500",
-  delivered_paid: "border-l-success",
+  paid: "border-l-primary",
+  delivered: "border-l-emerald",
+  delivered_paid: "border-l-primary",
   cancelled: "border-l-border",
 };
 
@@ -80,12 +80,12 @@ const SEGMENTED_OPTIONS: {
   {
     value: "delivered",
     label: "Entregado",
-    activeClass: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+    activeClass: "bg-emerald/10 text-emerald",
   },
   {
     value: "delivered_paid",
     label: "Pagado",
-    activeClass: "bg-success/15 text-success",
+    activeClass: "bg-primary/10 text-primary",
   },
 ];
 
@@ -159,8 +159,8 @@ export default function OrderCard({
         "hover:-translate-y-0.5 hover:scale-[1.006] active:scale-[0.985]",
         STATUS_ACCENT[status],
         isSelected
-          ? "border-crimson/50 bg-crimson/5 shadow-2xl shadow-crimson/10 ring-1 ring-crimson/20"
-          : "border-border/60 hover:border-crimson/30 hover:shadow-lg hover:shadow-crimson/5",
+          ? "border-primary/50 bg-primary/5 shadow-2xl shadow-primary/10 ring-1 ring-primary/20"
+          : "border-border/60 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5",
       )}
     >
       {/* MAIN CONTENT */}
@@ -171,7 +171,7 @@ export default function OrderCard({
             <p className="text-[9px] font-black uppercase tracking-[0.25em] text-muted-foreground/50">
               Pedido #{id}
             </p>
-            <h3 className="text-base font-black text-foreground leading-snug tracking-tight">
+            <h3 className="text-xl font-black text-foreground leading-snug tracking-tight">
               {localName}
             </h3>
           </div>
@@ -212,7 +212,7 @@ export default function OrderCard({
                 {STATUS_LABELS[status]}
               </div>
             )}
-            <div className="flex items-center gap-1 bg-success/15 px-2 py-1 rounded-full text-success border border-success/20">
+            <div className="flex items-center gap-1 bg-emerald/10 px-2 py-1 rounded-full text-emerald border border-emerald/20">
               <TrendingUp className="h-2.5 w-2.5 shrink-0" />
               <span className="text-[10px] font-black tracking-tight">
                 +{formatChileanPeso(revenue)}
@@ -222,31 +222,22 @@ export default function OrderCard({
         </div>
 
         {/* ITEMS */}
-        <div className="mt-3">
-          <div className="rounded-xl bg-muted/40 px-3 py-1.5 border border-border/30">
-            {items.map((item, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "flex justify-between items-center py-1.5",
-                  i !== 0 && "border-t border-border/20",
-                )}
-              >
-                <div className="min-w-0 flex-1 pr-3">
-                  <p className="font-bold text-foreground/90 text-xs leading-snug">
-                    {item.name}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    {item.quantity} unidades ×{" "}
-                    {formatChileanPeso(item.pricePerUnit)}
-                  </p>
-                </div>
-                <p className="font-black text-foreground text-xs shrink-0">
-                  {formatChileanPeso(item.pricePerUnit * item.quantity)}
+        <div className="mt-3 divide-y divide-border/20">
+          {items.map((item, i) => (
+            <div key={i} className="flex justify-between items-center py-2">
+              <div className="min-w-0 flex-1 pr-3">
+                <p className="font-semibold text-foreground/90 text-sm leading-snug">
+                  {item.name}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {item.quantity} unidades × {formatChileanPeso(item.pricePerUnit)}
                 </p>
               </div>
-            ))}
-          </div>
+              <p className="font-bold text-foreground text-sm shrink-0">
+                {formatChileanPeso(item.pricePerUnit * item.quantity)}
+              </p>
+            </div>
+          ))}
         </div>
 
         {/* FOOTER */}

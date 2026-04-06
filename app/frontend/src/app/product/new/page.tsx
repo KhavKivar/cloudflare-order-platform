@@ -77,11 +77,11 @@ export default function ProductCreatePage() {
 
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-500/10 border border-orange-500/20">
-            <Package className="h-5 w-5 text-orange-500" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
+            <Package className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-lg font-black text-foreground leading-tight">Nuevo producto</h1>
+            <h1 className="text-xl font-black text-foreground leading-tight">Nuevo producto</h1>
             <p className="text-[11px] text-muted-foreground/60 font-medium">Completá los campos requeridos</p>
           </div>
         </div>
@@ -128,7 +128,7 @@ export default function ProductCreatePage() {
                   type="button"
                   onClick={() => setValue("type", type, { shouldValidate: true })}
                   className={cn(
-                    "rounded-xl border py-2.5 px-1 text-[11px] font-black uppercase tracking-wide transition-all",
+                    "rounded-xl border py-2.5 px-1 text-[11px] font-black uppercase tracking-wide transition-all outline-none",
                     watchedType === type
                       ? "bg-orange-500/15 border-orange-500/40 text-orange-600 dark:text-orange-400"
                       : "bg-muted/30 border-border/40 text-muted-foreground/60 hover:bg-muted/50",
@@ -248,7 +248,7 @@ export default function ProductCreatePage() {
         <button
           onClick={handleSubmit((data) => mutate(data))}
           disabled={isPending}
-          className="w-full h-[58px] rounded-2xl bg-crimson hover:bg-crimson/90 disabled:opacity-50 text-white font-black text-[15px] shadow-[0_8px_25px_rgba(216,19,53,0.25)] transition-all flex items-center justify-center gap-2"
+          className="w-full h-[58px] rounded-2xl bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-black text-[15px] shadow-[0_8px_25px_rgba(216,19,53,0.25)] transition-all flex items-center justify-center gap-2"
         >
           {isPending ? (
             <Loader2 className="h-5 w-5 animate-spin" />

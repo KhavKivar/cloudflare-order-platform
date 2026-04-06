@@ -140,7 +140,7 @@ export default function OrdersPage() {
       {/* Loading */}
       {isLoadingData && (
         <div className="flex flex-col items-center justify-center py-32 text-muted-foreground">
-          <div className="size-10 animate-spin rounded-full border-4 border-border border-t-crimson mb-4" />
+          <div className="size-10 animate-spin rounded-full border-4 border-border border-t-primary mb-4" />
           <p className="font-bold text-sm">Cargando datos...</p>
         </div>
       )}
@@ -166,30 +166,30 @@ export default function OrdersPage() {
             className={cn(
               "w-full rounded-2xl p-4 flex items-center justify-between border transition-all active:scale-[0.98] relative overflow-hidden text-left",
               selectClient
-                ? "border-crimson/40 bg-crimson/5"
-                : "border-crimson/30 bg-crimson/[0.04] hover:bg-crimson/[0.07] hover:border-crimson/50",
+                ? "border-primary/40 bg-primary/5"
+                : "border-primary/30 bg-primary/[0.04] hover:bg-primary/[0.07] hover:border-primary/50",
             )}
           >
             {/* Glow ring when empty */}
             {!selectClient && (
-              <div className="absolute inset-0 rounded-2xl ring-1 ring-crimson/20 animate-pulse pointer-events-none" />
+              <div className="absolute inset-0 rounded-2xl ring-1 ring-primary/20 animate-pulse pointer-events-none" />
             )}
             {selectClient && (
-              <div className="absolute inset-0 bg-crimson/5 pointer-events-none" />
+              <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
             )}
             <div className="flex items-center gap-3 relative z-10 flex-1 min-w-0">
               <div className={cn(
                 "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border",
                 selectClient
-                  ? "bg-background border-crimson/30 text-crimson"
-                  : "bg-crimson/10 border-crimson/20 text-crimson",
+                  ? "bg-background border-primary/30 text-primary"
+                  : "bg-primary/10 border-primary/20 text-primary",
               )}>
                 <Store className="size-5" />
               </div>
               <div className="min-w-0 flex flex-col">
                 {selectClient ? (
                   <>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-crimson mb-0.5">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-0.5">
                       Cliente Asignado
                     </p>
                     <p className="text-base font-bold text-foreground truncate">
@@ -198,7 +198,7 @@ export default function OrdersPage() {
                   </>
                 ) : (
                   <>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-crimson/60 mb-0.5">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary/60 mb-0.5">
                       Paso 1 — Requerido
                     </p>
                     <p className="font-bold text-foreground/70">
@@ -210,7 +210,7 @@ export default function OrdersPage() {
             </div>
             <div className={cn(
               "flex h-8 w-8 shrink-0 items-center justify-center rounded-full ml-2 relative z-10",
-              selectClient ? "bg-crimson/20 text-crimson" : "bg-crimson/15 text-crimson",
+              selectClient ? "bg-primary/20 text-primary" : "bg-primary/15 text-primary",
             )}>
               <Plus className={cn("size-3.5", selectClient && "rotate-45")} />
             </div>
@@ -241,7 +241,7 @@ export default function OrdersPage() {
                           setOrder((prev) => ({ ...prev, clientId: Number(client.id) }));
                           setClientOpen(false);
                         }}
-                        className="rounded-xl px-4 py-3 aria-selected:bg-crimson/10"
+                        className="rounded-xl px-4 py-3 aria-selected:bg-primary/10"
                       >
                         <div className="flex items-center gap-3">
                           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
@@ -288,13 +288,13 @@ export default function OrdersPage() {
                 className={cn(
                   "w-full flex items-center justify-between rounded-xl border px-4 py-3.5 text-left transition-all active:scale-[0.99]",
                   selectProduct
-                    ? "border-crimson/30 bg-crimson/5"
+                    ? "border-primary/30 bg-primary/5"
                     : "border-border/50 bg-muted/30 hover:border-border",
                 )}
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50">
-                    <Package className={cn("size-4", selectProduct ? "text-crimson" : "text-muted-foreground/50")} />
+                    <Package className={cn("size-4", selectProduct ? "text-primary" : "text-muted-foreground/50")} />
                   </div>
                   <span className={cn("text-sm truncate", selectProduct ? "text-foreground font-bold" : "text-muted-foreground/50")}>
                     {selectProduct?.name ?? "Buscar producto..."}
@@ -314,7 +314,7 @@ export default function OrdersPage() {
                   <label className="absolute -top-2 left-3 bg-card px-1 text-[10px] font-black uppercase tracking-wider text-muted-foreground/50">
                     Precio
                   </label>
-                  <div className="relative flex items-center rounded-xl border border-border/50 bg-muted/30 focus-within:border-crimson/40 focus-within:ring-1 focus-within:ring-crimson/20 transition-all overflow-hidden">
+                  <div className="relative flex items-center rounded-xl border border-border/50 bg-muted/30 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all overflow-hidden">
                     <span className="pl-4 text-muted-foreground/50 font-mono text-sm pointer-events-none shrink-0">$</span>
                     <input
                       {...register("pricePerUnit")}
@@ -333,7 +333,7 @@ export default function OrdersPage() {
                   <label className="absolute -top-2 left-3 bg-card px-1 text-[10px] font-black uppercase tracking-wider text-muted-foreground/50">
                     Cant.
                   </label>
-                  <div className="flex items-center rounded-xl border border-border/50 bg-muted/30 focus-within:border-crimson/40 focus-within:ring-1 focus-within:ring-crimson/20 transition-all overflow-hidden">
+                  <div className="flex items-center rounded-xl border border-border/50 bg-muted/30 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all overflow-hidden">
                     <button
                       type="button"
                       onClick={() => {
@@ -370,7 +370,7 @@ export default function OrdersPage() {
               <Button
                 type="submit"
                 disabled={!selectClient}
-                className="w-full h-12 rounded-xl bg-crimson hover:bg-crimson/90 text-white font-bold shadow-lg shadow-crimson/20 disabled:opacity-40 disabled:pointer-events-none"
+                className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/20 disabled:opacity-40 disabled:pointer-events-none"
               >
                 <Plus className="mr-2 size-4" />
                 Agregar al Pedido
@@ -405,7 +405,7 @@ export default function OrdersPage() {
                       >
                         <div className="flex items-center justify-between w-full gap-4">
                           <span className="font-bold truncate flex-1">{product.name}</span>
-                          <span className="text-xs font-black text-crimson shrink-0">
+                          <span className="text-xs font-black text-primary shrink-0">
                             {formatChileanPeso(product.sellPriceClient)}
                           </span>
                         </div>
@@ -481,7 +481,7 @@ export default function OrdersPage() {
               </p>
             </div>
             <div className="flex items-start gap-1">
-              <span className="text-crimson font-bold text-lg mt-1">$</span>
+              <span className="text-primary font-bold text-lg mt-1">$</span>
               <span className="text-4xl font-black tracking-tighter text-foreground leading-none">
                 {orderTotal.toLocaleString("es-CL")}
               </span>
@@ -491,7 +491,7 @@ export default function OrdersPage() {
           <Button
             onClick={handleCreateOrder}
             disabled={mutation.isPending || orderItems.length === 0}
-            className="w-full h-14 rounded-xl bg-crimson hover:bg-crimson/90 text-white font-bold text-base shadow-lg shadow-crimson/20 disabled:opacity-40"
+            className="w-full h-14 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-base shadow-lg shadow-primary/20 disabled:opacity-40"
           >
             {mutation.isPending ? (
               <><Loader2 className="mr-2 size-4 animate-spin" />Confirmando...</>
