@@ -1,6 +1,7 @@
 import {
   ArrowUpRight,
   BarChart3,
+  ChevronRight,
   Package,
   Package2,
   ShoppingBag,
@@ -130,75 +131,63 @@ export default function Home() {
           </Card>
         </div>
 
-        {/* NAVIGATION CARDS */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* NAVIGATION LIST */}
+        <div className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden divide-y divide-border/40">
           {[
             {
               href: "/order",
               icon: ShoppingBag,
-              label: "Ventas",
-              description: "Crear & cobrar",
+              label: "Ventas (Pedidos)",
+              description: "Gestionar pedidos de clientes",
               iconClass: "text-primary",
-              bgClass: "bg-primary/10 border-primary/20",
-              hoverClass: "hover:border-primary/30",
-            },
-            {
-              href: "/purchase-order",
-              icon: Package,
-              label: "Compras",
-              description: "Proveedores",
-              iconClass: "text-amber-500",
-              bgClass: "bg-amber-500/10 border-amber-500/20",
-              hoverClass: "hover:border-amber-500/30",
+              bgClass: "bg-primary/10",
             },
             {
               href: "/client",
               icon: Users,
               label: "Clientes",
-              description: "Cuentas corrientes",
+              description: "Directorio de locales y rutas",
+              iconClass: "text-amber-500",
+              bgClass: "bg-amber-500/10",
+            },
+            {
+              href: "/purchase-order",
+              icon: Package,
+              label: "Compras",
+              description: "Órdenes a proveedores",
               iconClass: "text-blue-400",
-              bgClass: "bg-blue-500/10 border-blue-500/20",
-              hoverClass: "hover:border-blue-500/30",
+              bgClass: "bg-blue-500/10",
             },
             {
               href: "/stats",
               icon: BarChart3,
               label: "Estadísticas",
-              description: "Reportes globales",
-              iconClass: "text-purple-400",
-              bgClass: "bg-purple-500/10 border-purple-500/20",
-              hoverClass: "hover:border-purple-500/30",
+              description: "Reportes de ingresos y KPIs",
+              iconClass: "text-emerald-400",
+              bgClass: "bg-emerald-500/10",
             },
             {
               href: "/product",
               icon: Package2,
               label: "Productos",
               description: "Catálogo & precios",
-              iconClass: "text-orange-500",
-              bgClass: "bg-orange-500/10 border-orange-500/20",
-              hoverClass: "hover:border-orange-500/30",
+              iconClass: "text-purple-400",
+              bgClass: "bg-purple-500/10",
             },
           ].map((item) => (
             <button
               key={item.href}
               onClick={() => navigate(item.href)}
-              className={cn(
-                "relative text-left rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm p-4 h-[110px] flex flex-col justify-between transition-colors group",
-                item.hoverClass,
-              )}
+              className="w-full flex items-center gap-4 px-4 py-4 text-left hover:bg-muted/30 active:bg-muted/50 transition-colors"
             >
-              <div
-                className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-xl border",
-                  item.bgClass,
-                )}
-              >
-                <item.icon className={cn("h-5 w-5", item.iconClass)} />
+              <div className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl", item.bgClass)}>
+                <item.icon className={cn("h-6 w-6", item.iconClass)} />
               </div>
-              <div>
-                <p className="font-bold text-sm text-foreground leading-tight">{item.label}</p>
-                <p className="text-[11px] text-muted-foreground/50 font-medium mt-0.5">{item.description}</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm text-foreground">{item.label}</p>
+                <p className="text-xs text-muted-foreground/60 mt-0.5">{item.description}</p>
               </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground/30 shrink-0" />
             </button>
           ))}
         </div>

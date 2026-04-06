@@ -1,5 +1,3 @@
-"use client";
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, ShoppingBag, X } from "lucide-react";
 import { useNavigate } from "react-router";
@@ -26,6 +24,7 @@ export default function OrdersListPage() {
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("pending");
   const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
 
   const { data, isPending, error } = useQuery<OrdersResponse>({
@@ -35,14 +34,20 @@ export default function OrdersListPage() {
 
   const filteredOrders = useMemo(() => {
     if (!data?.orders) return [];
-    if (!search.trim()) return data.orders;
-    const q = search.toLowerCase();
-    return data.orders.filter(
-      (o) =>
-        (o.localName ?? "").toLowerCase().includes(q) ||
-        String(o.orderId).includes(q),
-    );
-  }, [data, search]);
+    let orders = data.orders;
+    if (statusFilter !== "all") {
+      orders = orders.filter((o) => o.status === statusFilter);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      orders = orders.filter(
+        (o) =>
+          (o.localName ?? "").toLowerCase().includes(q) ||
+          String(o.orderId).includes(q),
+      );
+    }
+    return orders;
+  }, [data, search, statusFilter]);
 
   const deleteMutation = useMutation({
     mutationFn: (payload: { orderId: number; order: OrderListItem }) =>
@@ -99,7 +104,7 @@ export default function OrdersListPage() {
                 Lista de Pedidos
               </h1>
               <p className="text-xs font-medium text-muted-foreground/60 mt-0.5">
-                {data?.orders.length ?? 0} pedidos activos
+                {filteredOrders.length} de {data?.orders.length ?? 0} pedidos
               </p>
             </div>
           </div>
@@ -111,6 +116,28 @@ export default function OrdersListPage() {
             <Plus className="h-5 w-5" />
           </Button>
         </header>
+
+        {/* STATUS FILTERS */}
+        <div className="-mx-4 sm:-mx-6">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar px-4 sm:px-6 pb-0.5">
+            {[
+              { value: "all",     label: "Todos" },
+              { value: "pending", label: "Pendiente" },
+            ].map((f) => (
+              <button
+                key={f.value}
+                onClick={() => setStatusFilter(f.value)}
+                className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-black transition-colors border ${
+                  statusFilter === f.value
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted/40 text-muted-foreground border-border/40 hover:bg-muted/70"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* SEARCH */}
         <div className="relative">
