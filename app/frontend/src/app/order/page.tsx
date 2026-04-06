@@ -130,10 +130,9 @@ export default function OrdersListPage() {
         <div className="-mx-4 sm:-mx-6">
           <div className="flex gap-2 overflow-x-auto no-scrollbar px-4 sm:px-6 pb-0.5">
             {[
-              { value: "active",    label: "Activos" },
-              { value: "all",       label: "Todos" },
-              { value: "pending",   label: "Pendiente" },
-              { value: "delivered", label: "Entregado" },
+              { value: "active",  label: "Activos" },
+              { value: "pending", label: "Pendiente" },
+              { value: "all",     label: "Todos" },
             ].map((f) => (
               <button
                 key={f.value}
