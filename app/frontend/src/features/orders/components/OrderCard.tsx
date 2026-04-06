@@ -68,7 +68,7 @@ const STATUS_ACCENT: Record<OrderCardProps["status"], string> = {
 };
 
 const SEGMENTED_OPTIONS: {
-  value: "pending" | "delivered" | "delivered_paid";
+  value: "pending" | "paid" | "delivered" | "delivered_paid";
   label: string;
   activeClass: string;
 }[] = [
@@ -78,18 +78,23 @@ const SEGMENTED_OPTIONS: {
     activeClass: "bg-warning/15 text-warning",
   },
   {
+    value: "paid",
+    label: "Pagado",
+    activeClass: "bg-primary/10 text-primary",
+  },
+  {
     value: "delivered",
     label: "Entregado",
     activeClass: "bg-emerald/10 text-emerald",
   },
   {
     value: "delivered_paid",
-    label: "Pagado",
-    activeClass: "bg-primary/10 text-primary",
+    label: "Completado",
+    activeClass: "bg-emerald/20 text-emerald",
   },
 ];
 
-const SWITCHABLE_STATUSES = new Set(["pending", "delivered", "delivered_paid"]);
+const SWITCHABLE_STATUSES = new Set(["pending", "paid", "delivered", "delivered_paid"]);
 
 export default function OrderCard({
   id,
