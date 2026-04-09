@@ -7,6 +7,8 @@ import Layout from "./layout";
 
 import OrderEditPage from "./order/edit/page";
 import OrderCreatePage from "./order/new/page";
+import SelectClientPage from "./order/new/select-client/page";
+import SelectProductPage from "./order/new/select-product/page";
 import OrderListPage from "./order/page";
 import ProductListPage from "./product/page";
 import ProductCreatePage from "./product/new/page";
@@ -33,6 +35,8 @@ function App() {
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/order" element={<OrderListPage />} />
             <Route path="/order/new" element={<OrderCreatePage />} />
+            <Route path="/order/new/select-client" element={<SelectClientPage />} />
+            <Route path="/order/new/select-product" element={<SelectProductPage />} />
             <Route path="/order/:id/edit" element={<OrderEditPage />} />
 
             <Route path="/client" element={<ClientListPage />} />

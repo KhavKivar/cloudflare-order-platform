@@ -90,6 +90,16 @@ export default function Layout() {
           title: "Nuevo pedido manual",
           showBack: true,
         };
+      case "/order/new/select-client":
+        return {
+          title: "Seleccionar Cliente",
+          showBack: true,
+        };
+      case "/order/new/select-product":
+        return {
+          title: "Catálogo de Productos",
+          showBack: true,
+        };
       case "/purchase-order":
         return {
           title: "Ordenes de compra",

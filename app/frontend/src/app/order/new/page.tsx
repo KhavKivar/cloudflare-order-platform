@@ -1,18 +1,4 @@
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import httpClient from "@/lib/api-provider";
 import type { Client } from "@/features/client/api/client.schema";
 import { createOrder } from "@/features/orders/api/create-order";
@@ -34,9 +20,9 @@ import {
   Store,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { toast } from "sonner";
 import z from "zod";
 
@@ -53,6 +39,7 @@ type ClientQuery = { clients: Client[] };
 
 export default function OrdersPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { register, handleSubmit, setValue, watch, formState: { errors } } =
     useForm<FormFields>({ resolver: zodResolver(schema) });
 
@@ -72,12 +59,88 @@ export default function OrdersPage() {
   const isSuccessData = data || productsData;
 
   const [selectClient, setSelectClient] = useState<Client | null>(null);
-  const [isClientOpen, setClientOpen] = useState(false);
   const [selectProduct, setSelectProduct] = useState<Product | null>(null);
-  const [isProductOpen, setProductOpen] = useState(false);
   const mutation = useMutation({ mutationFn: createOrder });
 
   const [order, setOrder] = useState<OrderCreateDto>({ clientId: 0, items: [] });
+
+  // Restore state when returning from select pages or via back button
+  useEffect(() => {
+    type NavState = {
+      order?: OrderCreateDto;
+      selectClient?: Client | null;
+      selectProduct?: Product | null;
+      formValues?: { pricePerUnit: string; quantity: string; item: string };
+      selectedClient?: Client;
+      selectedProduct?: Product;
+    };
+
+    const state = location.state as NavState | null;
+
+    if (!state) {
+      // Back button case: try sessionStorage draft
+      try {
+        const raw = sessionStorage.getItem("order-new-draft");
+        if (raw) {
+          const d = JSON.parse(raw) as NavState;
+          if (d.order) setOrder(d.order);
+          if (d.selectClient !== undefined) setSelectClient(d.selectClient);
+          if (d.selectProduct !== undefined) {
+            setSelectProduct(d.selectProduct);
+            if (d.selectProduct) {
+              setValue("item", d.selectProduct.name);
+              setValue("pricePerUnit", String(d.selectProduct.sellPriceClient));
+            }
+          }
+          if (d.formValues?.quantity) setValue("quantity", d.formValues.quantity);
+          sessionStorage.removeItem("order-new-draft");
+        }
+      } catch {}
+      return;
+    }
+
+    if (state.order) setOrder(state.order);
+    if (state.selectProduct !== undefined) {
+      setSelectProduct(state.selectProduct);
+      if (state.selectProduct) {
+        setValue("item", state.selectProduct.name);
+        setValue("pricePerUnit", String(state.selectProduct.sellPriceClient));
+      }
+    }
+    if (state.formValues?.quantity) setValue("quantity", state.formValues.quantity);
+
+    if (state.selectedClient) {
+      setSelectClient(state.selectedClient);
+      setValue("clientId", Number(state.selectedClient.id), { shouldValidate: true });
+      setOrder((prev) => ({ ...prev, clientId: Number(state.selectedClient!.id) }));
+    } else if (state.selectClient !== undefined) {
+      setSelectClient(state.selectClient);
+      if (state.selectClient) setValue("clientId", Number(state.selectClient.id));
+    }
+
+    if (state.selectedProduct) {
+      setSelectProduct(state.selectedProduct);
+      setValue("item", state.selectedProduct.name, { shouldValidate: true });
+      setValue("pricePerUnit", String(state.selectedProduct.sellPriceClient), { shouldValidate: true });
+    }
+
+    navigate(location.pathname, { replace: true, state: null });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const saveDraftAndNavigate = (to: string) => {
+    const draft = {
+      order,
+      selectClient,
+      selectProduct,
+      formValues: {
+        pricePerUnit: watch("pricePerUnit") ?? "",
+        quantity: watch("quantity") ?? "",
+        item: watch("item") ?? "",
+      },
+    };
+    sessionStorage.setItem("order-new-draft", JSON.stringify(draft));
+    navigate(to, { state: draft });
+  };
 
   const orderItems = order.items.map((item) => {
     const product = productsData?.products.find((p) => p.id === item.productId);
@@ -105,6 +168,7 @@ export default function OrdersPage() {
     }
     mutation.mutate(order, {
       onSuccess: () => {
+        sessionStorage.removeItem("order-new-draft");
         navigate("/order", { replace: true, state: { toast: "Pedido manual creado con éxito" } });
       },
       onError: () => {
@@ -162,7 +226,7 @@ export default function OrdersPage() {
           {/* 1. CLIENT SELECTOR */}
           <button
             type="button"
-            onClick={() => setClientOpen(true)}
+            onClick={() => saveDraftAndNavigate("/order/new/select-client")}
             className={cn(
               "w-full rounded-2xl p-4 flex items-center justify-between border transition-all active:scale-[0.98] relative overflow-hidden text-left",
               selectClient
@@ -189,7 +253,7 @@ export default function OrdersPage() {
               <div className="min-w-0 flex flex-col">
                 {selectClient ? (
                   <>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-0.5">
+                    <p className="text-xs font-bold uppercase tracking-widest text-primary mb-0.5">
                       Cliente Asignado
                     </p>
                     <p className="text-base font-bold text-foreground truncate">
@@ -198,10 +262,10 @@ export default function OrdersPage() {
                   </>
                 ) : (
                   <>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-primary/60 mb-0.5">
+                    <p className="text-xs font-bold uppercase tracking-widest text-primary/70 mb-0.5">
                       Paso 1 — Requerido
                     </p>
-                    <p className="font-bold text-foreground/70">
+                    <p className="text-base font-bold text-foreground/70">
                       Seleccionar cliente...
                     </p>
                   </>
@@ -216,54 +280,13 @@ export default function OrdersPage() {
             </div>
           </button>
 
-          {/* Client dialog */}
-          <Dialog open={isClientOpen} onOpenChange={setClientOpen}>
-            <DialogContent className="fixed inset-0 z-50 flex h-full w-full max-w-none translate-x-0 translate-y-0 flex-col border-0 bg-card p-0 sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl sm:border sm:shadow-2xl overflow-hidden">
-              <DialogHeader className="bg-muted/40 p-5 border-b border-border/40">
-                <DialogTitle className="text-lg font-black">Seleccionar Cliente</DialogTitle>
-              </DialogHeader>
-              <Command className="flex h-full flex-col border-0">
-                <div className="flex items-center border-b border-border/40 px-3">
-                  <CommandInput placeholder="Filtrar por nombre..." className="h-12 border-0" />
-                </div>
-                <CommandList className="flex-1 max-h-none py-2">
-                  <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
-                    No se encontraron clientes.
-                  </CommandEmpty>
-                  <CommandGroup>
-                    {data.clients.map((client: Client) => (
-                      <CommandItem
-                        key={client.id}
-                        value={client.localName}
-                        onSelect={() => {
-                          setSelectClient(client);
-                          setValue("clientId", Number(client.id), { shouldValidate: true });
-                          setOrder((prev) => ({ ...prev, clientId: Number(client.id) }));
-                          setClientOpen(false);
-                        }}
-                        className="rounded-xl px-4 py-3 aria-selected:bg-primary/10"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
-                            <Store className="size-4 text-muted-foreground" />
-                          </div>
-                          <span className="font-bold">{client.localName}</span>
-                        </div>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </DialogContent>
-          </Dialog>
-
           {/* 2. ADD PRODUCT CARD */}
           <div className={cn(
-            "rounded-2xl border bg-card/40 backdrop-blur-sm overflow-hidden transition-all duration-200",
+            "rounded-2xl border bg-card shadow-sm overflow-hidden transition-all duration-200",
             selectClient ? "border-border/40" : "border-border/20 opacity-50",
           )}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-border/30">
-              <h3 className="text-sm font-black text-foreground/80">Configurar Item</h3>
+              <h3 className="text-base font-black text-foreground">Configurar Item</h3>
               {!selectClient ? (
                 <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/40">
                   Seleccioná un cliente primero
@@ -283,7 +306,7 @@ export default function OrdersPage() {
                     toast.error("Seleccioná un cliente primero");
                     return;
                   }
-                  setProductOpen(true);
+                  saveDraftAndNavigate("/order/new/select-product");
                 }}
                 className={cn(
                   "w-full flex items-center justify-between rounded-xl border px-4 py-3.5 text-left transition-all active:scale-[0.99]",
@@ -296,7 +319,7 @@ export default function OrdersPage() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50">
                     <Package className={cn("size-4", selectProduct ? "text-primary" : "text-muted-foreground/50")} />
                   </div>
-                  <span className={cn("text-sm truncate", selectProduct ? "text-foreground font-bold" : "text-muted-foreground/50")}>
+                  <span className={cn("text-base truncate", selectProduct ? "text-foreground font-bold" : "text-muted-foreground/60")}>
                     {selectProduct?.name ?? "Buscar producto..."}
                   </span>
                 </div>
@@ -311,7 +334,7 @@ export default function OrdersPage() {
               <div className="flex gap-3">
                 {/* Price */}
                 <div className="relative flex-1">
-                  <label className="absolute -top-2 left-3 bg-card px-1 text-[10px] font-black uppercase tracking-wider text-muted-foreground/50">
+                  <label className="absolute -top-2 left-3 bg-card px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground/70">
                     Precio
                   </label>
                   <div className="relative flex items-center rounded-xl border border-border/50 bg-muted/30 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all overflow-hidden">
@@ -320,7 +343,7 @@ export default function OrdersPage() {
                       {...register("pricePerUnit")}
                       type="number"
                       placeholder="0"
-                      className="w-full bg-transparent px-2 py-3.5 text-foreground text-sm focus:outline-none placeholder:text-muted-foreground/30"
+                      className="w-full bg-transparent px-2 py-3.5 text-foreground text-base focus:outline-none placeholder:text-muted-foreground/30"
                     />
                   </div>
                   {errors.pricePerUnit && (
@@ -330,7 +353,7 @@ export default function OrdersPage() {
 
                 {/* Qty with +/- */}
                 <div className="relative w-36">
-                  <label className="absolute -top-2 left-3 bg-card px-1 text-[10px] font-black uppercase tracking-wider text-muted-foreground/50">
+                  <label className="absolute -top-2 left-3 bg-card px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground/70">
                     Cant.
                   </label>
                   <div className="flex items-center rounded-xl border border-border/50 bg-muted/30 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all overflow-hidden">
@@ -348,7 +371,7 @@ export default function OrdersPage() {
                       {...register("quantity")}
                       type="number"
                       placeholder="1"
-                      className="w-full bg-transparent text-center text-foreground text-sm focus:outline-none placeholder:text-muted-foreground/30 py-3.5"
+                      className="w-full bg-transparent text-center text-foreground text-base focus:outline-none placeholder:text-muted-foreground/30 py-3.5"
                     />
                     <button
                       type="button"
@@ -378,45 +401,6 @@ export default function OrdersPage() {
             </form>
           </div>
 
-          {/* Product dialog */}
-          <Dialog open={isProductOpen} onOpenChange={setProductOpen}>
-            <DialogContent className="fixed inset-0 z-50 flex h-full w-full max-w-none translate-x-0 translate-y-0 flex-col border-0 bg-card p-0 sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl sm:border sm:shadow-2xl overflow-hidden">
-              <DialogHeader className="bg-muted/40 p-5 border-b border-border/40">
-                <DialogTitle className="text-lg font-black">Catálogo de Productos</DialogTitle>
-              </DialogHeader>
-              <Command className="flex h-full flex-col border-0">
-                <CommandInput placeholder="Buscar por nombre..." className="h-12 border-0" />
-                <CommandList className="flex-1 max-h-none py-2">
-                  <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
-                    No hay resultados.
-                  </CommandEmpty>
-                  <CommandGroup>
-                    {productsData?.products.map((product: Product) => (
-                      <CommandItem
-                        key={product.id}
-                        value={product.name}
-                        onSelect={() => {
-                          setSelectProduct(product);
-                          setValue("item", product.name, { shouldValidate: true });
-                          setValue("pricePerUnit", String(product.sellPriceClient), { shouldValidate: true });
-                          setProductOpen(false);
-                        }}
-                        className="rounded-xl px-4 py-3"
-                      >
-                        <div className="flex items-center justify-between w-full gap-4">
-                          <span className="font-bold truncate flex-1">{product.name}</span>
-                          <span className="text-xs font-black text-primary shrink-0">
-                            {formatChileanPeso(product.sellPriceClient)}
-                          </span>
-                        </div>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </DialogContent>
-          </Dialog>
-
           {/* 3. CART ITEMS */}
           {orderItems.length > 0 && (
             <div className="flex flex-col gap-2">
@@ -432,16 +416,16 @@ export default function OrdersPage() {
               {orderItems.map((item) => (
                 <div
                   key={item.productId}
-                  className="flex items-center justify-between py-3 px-3.5 bg-card/40 border border-border/30 rounded-xl"
+                  className="flex items-center justify-between py-3.5 px-4 bg-card border border-border/40 shadow-sm rounded-xl"
                 >
                   <div className="flex flex-col gap-0.5 flex-1 min-w-0 pr-3">
-                    <span className="font-bold text-sm text-foreground truncate">{item.name}</span>
-                    <span className="text-[11px] text-muted-foreground/50 font-mono">
+                    <span className="font-bold text-base text-foreground truncate">{item.name}</span>
+                    <span className="text-sm text-muted-foreground/70 font-mono">
                       {item.quantity} × {formatChileanPeso(item.pricePerUnit)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2.5 shrink-0">
-                    <span className="font-black text-sm text-foreground font-mono">
+                    <span className="font-black text-base text-foreground font-mono">
                       {formatChileanPeso(item.pricePerUnit * item.quantity)}
                     </span>
                     <button
@@ -473,10 +457,10 @@ export default function OrdersPage() {
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border/50 px-4 pt-4 pb-6 sm:max-w-lg sm:mx-auto">
           <div className="flex items-end justify-between mb-4 px-1">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 mb-0.5">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70 mb-0.5">
                 Total a Cobrar
               </p>
-              <p className="text-[11px] text-muted-foreground/40">
+              <p className="text-sm text-muted-foreground/60">
                 {orderItems.length} {orderItems.length === 1 ? "ítem" : "ítems"}
               </p>
             </div>
