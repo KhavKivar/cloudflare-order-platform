@@ -57,10 +57,14 @@ export default function Layout() {
         showBack: true,
       };
     }
-    if (location.pathname.startsWith("/order/")) {
+    if (
+      location.pathname.startsWith("/order/") &&
+      !location.pathname.startsWith("/order/new")
+    ) {
       return {
         title: "Detalle del pedido",
         showBack: true,
+        backTo: "/order",
       };
     }
     if (
