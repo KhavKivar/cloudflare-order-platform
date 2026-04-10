@@ -145,7 +145,7 @@ export default function OrderCard({
           `• ${item.name}: ${item.quantity} x ${formatChileanPeso(item.pricePerUnit)} = ${formatChileanPeso(item.pricePerUnit * item.quantity)}`,
       ),
       "",
-      `💰 *Total: ${formatChileanPeso(total)}*`,
+      `💰 Total: ${formatChileanPeso(total)}`,
     ].join("\n");
 
     try {
@@ -160,12 +160,12 @@ export default function OrderCard({
     <article
       onClick={onClick}
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-2xl border-l-[3px] border bg-card text-left transition-all duration-300 cursor-pointer",
+        "group relative flex flex-col overflow-hidden rounded-2xl border-l-[3px] border text-left transition-all duration-300 cursor-pointer",
         "hover:-translate-y-0.5 hover:scale-[1.006] active:scale-[0.985]",
         STATUS_ACCENT[status],
         isSelected
-          ? "border-primary/50 bg-primary/5 shadow-2xl shadow-primary/10 ring-1 ring-primary/20"
-          : "border-border/60 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5",
+          ? "border-primary/60 bg-primary/12 shadow-lg shadow-primary/15 ring-2 ring-primary/25"
+          : "bg-card shadow-sm border-border/60 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5",
       )}
     >
       {/* MAIN CONTENT */}
