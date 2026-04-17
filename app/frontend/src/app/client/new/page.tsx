@@ -40,8 +40,12 @@ export default function NewClientPage() {
 
   const localNameValue = watch("localName");
   const hasLocalName = !!(localNameValue && localNameValue.trim().length > 0);
-  const errorMessage =
-    error instanceof Error ? error.message : "No se pudo crear el cliente.";
+  const errorMessage = (() => {
+    if (!error) return "";
+    const status = (error as any)?.response?.status;
+    if (status === 409) return "Ya existe un cliente con ese nombre o teléfono.";
+    return "No se pudo crear el cliente.";
+  })();
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,8 +64,8 @@ export default function NewClientPage() {
           </div>
         )}
 
-        {/* HEADER */}
-        <header className="mb-8 flex items-center gap-3">
+        {/* HEADER CARD */}
+        <div className="rounded-2xl border border-border/50 bg-card shadow-sm p-4 flex items-center gap-3 mb-4">
           <div className="h-10 w-10 shrink-0 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
             <Users className="h-5 w-5 text-blue-400" />
           </div>
@@ -73,7 +77,7 @@ export default function NewClientPage() {
               Registrá los datos del local para asociarlo a los pedidos.
             </p>
           </div>
-        </header>
+        </div>
 
         {/* FORM */}
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
@@ -89,7 +93,7 @@ export default function NewClientPage() {
                 type="text"
                 placeholder="Ej. Tienda Central"
                 className={cn(
-                  "w-full rounded-2xl border bg-muted/30 px-4 py-4 pr-11 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30",
+                  "w-full rounded-2xl border bg-card px-4 py-4 pr-11 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30",
                   "outline-none transition-all duration-200",
                   "focus:bg-muted/50 focus:border-border/80",
                   errors.localName
@@ -125,7 +129,7 @@ export default function NewClientPage() {
                 type="text"
                 placeholder="Ej. Av. Santa Fe 3450"
                 className={cn(
-                  "w-full rounded-2xl border bg-muted/30 pl-11 pr-4 py-4 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30",
+                  "w-full rounded-2xl border bg-card pl-11 pr-4 py-4 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30",
                   "outline-none transition-all duration-200",
                   "focus:bg-muted/50 focus:border-border/80",
                   errors.address
@@ -164,7 +168,7 @@ export default function NewClientPage() {
                 maxLength={20}
                 placeholder="912345678"
                 className={cn(
-                  "w-full rounded-2xl border bg-muted/30 pl-[80px] pr-4 py-4 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30",
+                  "w-full rounded-2xl border bg-card pl-[80px] pr-4 py-4 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30",
                   "outline-none transition-all duration-200",
                   "focus:bg-muted/50 focus:border-border/80",
                   errors.phone

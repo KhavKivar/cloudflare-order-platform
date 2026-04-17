@@ -1,4 +1,5 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { PurchaseOrdersResponse } from "@/features/purchase-orders/api/get-purchase-orders";
 import {
   ChevronRight,
   Info,
@@ -18,6 +19,7 @@ import {
 } from "@/app/purchaseOrderSlice";
 import { Button } from "@/components/ui/button";
 import { createPurchaseOrder } from "@/features/purchase-orders/api/create-purchase-orders";
+import { purchaseOrderKeys } from "@/features/purchase-orders/config/constants";
 import { useAppSelector } from "@/hooks/redux.hooks";
 import { cn } from "@/lib/utils";
 import { formatChileanPeso } from "@/utils/format-currency";
@@ -34,9 +36,29 @@ export default function PurchaseOrderSummaryPage() {
   const dispatch = useDispatch();
   const selectedOrders = useAppSelector(selectedPurchaseOrder);
 
+  const queryClient = useQueryClient();
+
   const purchaseOrderMutation = useMutation({
     mutationFn: createPurchaseOrder,
-    onSuccess: () => {
+    onSuccess: (created) => {
+      const optimisticOrder = {
+        purchaseOrderId: created.purchaseOrder.id,
+        createdAt: created.purchaseOrder.createdAt,
+        status: created.purchaseOrder.status,
+        lines: purchaseItems.map((item) => ({
+          productId: item.productId,
+          productName: item.name,
+          quantity: item.quantity,
+          buyPriceSupplier: item.pricePerUnit,
+          sellPriceClient: 0,
+        })),
+      };
+
+      queryClient.setQueryData<PurchaseOrdersResponse>(purchaseOrderKeys.all, (old) => ({
+        orders: [optimisticOrder, ...(old?.orders ?? [])],
+      }));
+      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.all });
+
       dispatch(cleanSelectedPurchaseOrder());
       navigate("/purchase-order", { replace: true });
       toast.success("Orden de compra creada correctamente");

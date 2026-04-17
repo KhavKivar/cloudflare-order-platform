@@ -1,4 +1,5 @@
 import httpClient from "@/lib/api-provider";
+import type { OrderListItem } from "./get-orders";
 
 interface OrderCreateDTO {
   clientId: number;
@@ -9,7 +10,15 @@ interface OrderCreateDTO {
   }[];
 }
 
-export const createOrder = async (payload: OrderCreateDTO) => {
+export interface CreateOrderResponse {
+  id: number;
+  clientId: number;
+  createdAt: string;
+  status: OrderListItem["status"];
+  purchaseOrderId: number | null;
+}
+
+export const createOrder = async (payload: OrderCreateDTO): Promise<CreateOrderResponse> => {
   const requestBody = {
     clientId: payload.clientId,
     items: payload.items.map((item) => ({

@@ -4,6 +4,7 @@ import { Bindings, getDb } from "../../db/index.js";
 import {
   clientByPhoneSchema,
   clientByPhoneIdSchema,
+  clientByLocalNameSchema,
   clientCreateSchema,
   clientUpdateSchema,
 } from "./clients.schema.js";
@@ -46,6 +47,22 @@ clientsApp.get(
 
     if (!client) {
       return c.json({ message: "Client not found by phoneId" }, 404);
+    }
+    return c.json({ client });
+  }
+);
+
+clientsApp.get(
+  "/localName/:localName",
+  zValidator("param", clientByLocalNameSchema),
+  async (c) => {
+    const { localName } = c.req.valid("param");
+    const db = getDb(c.env);
+    const clientService = new ClientService(db);
+    const client = await clientService.getClientByLocalName(localName);
+
+    if (!client) {
+      return c.json({ message: "Client not found by localName" }, 404);
     }
     return c.json({ client });
   }

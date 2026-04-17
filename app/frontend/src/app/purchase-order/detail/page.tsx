@@ -9,7 +9,6 @@ import {
   Save,
   ShoppingBasket,
   Store,
-  X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
@@ -21,13 +20,15 @@ import {
   type OrderListItem,
   type OrdersResponse,
 } from "@/features/orders/api/get-orders";
+import { type PurchaseOrderDetail } from "@/features/purchase-orders/api/get-purchase-order";
+import { type PurchaseOrdersResponse } from "@/features/purchase-orders/api/get-purchase-orders";
 import OrderCard from "@/features/orders/components/OrderCard";
-import { getPurchaseOrder } from "@/features/purchase-orders/api/get-purchase-order";
 import { updatePurchaseOrder } from "@/features/purchase-orders/api/update-purchase-order";
 import {
   updatePurchaseOrderStatus,
   type PurchaseOrderStatus,
 } from "@/features/purchase-orders/api/update-purchase-order-status";
+import { purchaseOrderKeys, purchaseOrderFns } from "@/features/purchase-orders/config/constants";
 import { cn } from "@/lib/utils";
 import { formatChileanPeso } from "@/utils/format-currency";
 
@@ -98,17 +99,35 @@ export default function PurchaseOrderDetailPage() {
   const updateStatusMutation = useMutation({
     mutationFn: (status: PurchaseOrderStatus) =>
       updatePurchaseOrderStatus(purchaseOrderId, status),
+    onMutate: async (status) => {
+      await queryClient.cancelQueries({ queryKey: purchaseOrderKeys.detail(purchaseOrderId) });
+      await queryClient.cancelQueries({ queryKey: purchaseOrderKeys.all });
+      const snapshotDetail = queryClient.getQueryData<PurchaseOrderDetail>(purchaseOrderKeys.detail(purchaseOrderId));
+      const snapshotAll = queryClient.getQueryData<PurchaseOrdersResponse>(purchaseOrderKeys.all);
+      queryClient.setQueryData<PurchaseOrderDetail>(purchaseOrderKeys.detail(purchaseOrderId), (old) =>
+        old ? { ...old, status } : old,
+      );
+      queryClient.setQueryData<PurchaseOrdersResponse>(purchaseOrderKeys.all, (old) => {
+        if (!old) return old;
+        return { orders: old.orders.map((o) => o.purchaseOrderId === purchaseOrderId ? { ...o, status } : o) };
+      });
+      return { snapshotDetail, snapshotAll };
+    },
+    onError: (_, __, context) => {
+      if (context?.snapshotDetail) queryClient.setQueryData(purchaseOrderKeys.detail(purchaseOrderId), context.snapshotDetail);
+      if (context?.snapshotAll) queryClient.setQueryData(purchaseOrderKeys.all, context.snapshotAll);
+      toast.error("No se pudo actualizar el estado.");
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["purchase-order", purchaseOrderId] });
-      queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.detail(purchaseOrderId) });
+      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.all });
       setShowStatusStrip(false);
     },
-    onError: () => toast.error("No se pudo actualizar el estado."),
   });
 
   const { data: purchaseOrder, isPending, error } = useQuery({
-    queryKey: ["purchase-order", purchaseOrderId],
-    queryFn: () => getPurchaseOrder(purchaseOrderId),
+    queryKey: purchaseOrderKeys.detail(purchaseOrderId),
+    queryFn: purchaseOrderFns.detail(purchaseOrderId),
     enabled: Number.isFinite(purchaseOrderId),
   });
 
@@ -121,13 +140,77 @@ export default function PurchaseOrderDetailPage() {
 
   const updateMutation = useMutation({
     mutationFn: updatePurchaseOrder,
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey: purchaseOrderKeys.detail(purchaseOrderId) });
+      await queryClient.cancelQueries({ queryKey: purchaseOrderKeys.all });
+
+      const snapshotDetail = queryClient.getQueryData<PurchaseOrderDetail>(purchaseOrderKeys.detail(purchaseOrderId));
+      const snapshotAll = queryClient.getQueryData<PurchaseOrdersResponse>(purchaseOrderKeys.all);
+
+      const optimisticOrders = ordersData?.orders
+        .filter((o) => payload.orderListIds.includes(o.orderId))
+        .map((o) => ({
+          orderId: o.orderId,
+          createdAt: o.createdAt,
+          localName: o.localName,
+          phone: o.phone,
+          lines: o.lines.map((l) => ({
+            lineId: l.lineId,
+            productId: l.productId,
+            productName: l.productName,
+            pricePerUnit: l.pricePerUnit,
+            buyPriceSupplier: l.buyPriceSupplier,
+            quantity: l.quantity,
+            lineTotal: l.lineTotal,
+          })),
+        })) ?? snapshotDetail?.orders ?? [];
+
+      queryClient.setQueryData<PurchaseOrderDetail>(purchaseOrderKeys.detail(purchaseOrderId), (old) =>
+        old ? { ...old, orders: optimisticOrders } : old,
+      );
+
+      const consolidatedLines = new Map<number, { productId: number; productName: string | null; buyPriceSupplier: number; sellPriceClient: number; quantity: number }>();
+      optimisticOrders.forEach((o) => {
+        o.lines.forEach((l) => {
+          const existing = consolidatedLines.get(l.productId);
+          if (existing) {
+            existing.quantity += l.quantity;
+          } else {
+            consolidatedLines.set(l.productId, {
+              productId: l.productId,
+              productName: l.productName,
+              buyPriceSupplier: l.buyPriceSupplier,
+              sellPriceClient: 0,
+              quantity: l.quantity,
+            });
+          }
+        });
+      });
+
+      queryClient.setQueryData<PurchaseOrdersResponse>(purchaseOrderKeys.all, (old) => {
+        if (!old) return old;
+        return {
+          orders: old.orders.map((o) =>
+            o.purchaseOrderId === purchaseOrderId
+              ? { ...o, lines: Array.from(consolidatedLines.values()) }
+              : o,
+          ),
+        };
+      });
+
+      return { snapshotDetail, snapshotAll };
+    },
+    onError: (_, __, context) => {
+      if (context?.snapshotDetail) queryClient.setQueryData(purchaseOrderKeys.detail(purchaseOrderId), context.snapshotDetail);
+      if (context?.snapshotAll) queryClient.setQueryData(purchaseOrderKeys.all, context.snapshotAll);
+      toast.error("Error al actualizar la orden");
+    },
     onSuccess: () => {
       toast.success("Orden actualizada correctamente");
-      queryClient.invalidateQueries({ queryKey: ["purchase-order", purchaseOrderId] });
-      queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.detail(purchaseOrderId) });
+      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.all });
       setIsEditing(false);
     },
-    onError: () => toast.error("Error al actualizar la orden"),
   });
 
   const consolidated = useMemo(
@@ -164,11 +247,6 @@ export default function PurchaseOrderDetailPage() {
     if (!purchaseOrder) return;
     setSelectedOrderIds(purchaseOrder.orders.map((o) => o.orderId));
     setIsEditing(true);
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    if (purchaseOrder) setSelectedOrderIds(purchaseOrder.orders.map((o) => o.orderId));
   };
 
   const handleToggleOrder = (order: OrderListItem) => {
@@ -236,8 +314,8 @@ export default function PurchaseOrderDetailPage() {
 
         {purchaseOrder && (
           <>
-            {/* HEADER */}
-            <header className="flex items-center justify-between gap-3">
+            {/* HEADER CARD */}
+            <div className="rounded-2xl border border-border/50 bg-card shadow-sm p-4 flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10 border border-amber-500/20">
                   <Package className="h-5 w-5 text-amber-400" />
@@ -250,7 +328,7 @@ export default function PurchaseOrderDetailPage() {
                     {SWITCHABLE_STATUSES.has(purchaseOrder.status) ? (
                       <button
                         className={cn(
-                          "flex items-center gap-1 rounded-md px-2 py-0.5 text-[9px] font-black uppercase tracking-wider transition-opacity",
+                          "flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-wider transition-opacity",
                           STATUS_CONFIG[purchaseOrder.status]?.style ?? STATUS_CONFIG.pending.style,
                           updateStatusMutation.isPending && "opacity-50",
                         )}
@@ -261,7 +339,7 @@ export default function PurchaseOrderDetailPage() {
                       </button>
                     ) : (
                       <span className={cn(
-                        "rounded-md px-2 py-0.5 text-[9px] font-black uppercase tracking-wider",
+                        "rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-wider",
                         STATUS_CONFIG[purchaseOrder.status]?.style ?? STATUS_CONFIG.pending.style,
                       )}>
                         {STATUS_CONFIG[purchaseOrder.status]?.label ?? "Pendiente"}
@@ -269,14 +347,14 @@ export default function PurchaseOrderDetailPage() {
                     )}
                   </div>
                   {showStatusStrip && (
-                    <div className="flex gap-1.5 mt-2 rounded-xl border border-border/30 bg-muted/20 p-1.5">
+                    <div className="flex gap-1.5 mt-2 rounded-xl border border-border/30 bg-background p-1.5">
                       {SEGMENTED_OPTIONS.map((opt) => (
                         <button
                           key={opt.value}
                           disabled={updateStatusMutation.isPending}
                           onClick={() => updateStatusMutation.mutate(opt.value)}
                           className={cn(
-                            "flex-1 rounded-lg py-1.5 text-[10px] font-black uppercase tracking-wider transition-all border",
+                            "flex-1 rounded-lg py-2 text-xs font-bold uppercase tracking-wider transition-all border",
                             purchaseOrder.status === opt.value
                               ? opt.activeClass
                               : "border-transparent text-muted-foreground/50 hover:bg-muted/60 hover:text-foreground",
@@ -288,7 +366,7 @@ export default function PurchaseOrderDetailPage() {
                       ))}
                     </div>
                   )}
-                  <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground/50">
+                  <div className="flex items-center gap-1.5 mt-0.5 text-sm text-muted-foreground/70">
                     <Calendar className="h-3 w-3" />
                     <span>
                       {new Date(purchaseOrder.createdAt).toLocaleDateString("es-CL", {
@@ -312,14 +390,14 @@ export default function PurchaseOrderDetailPage() {
                   Modificar
                 </Button>
               )}
-            </header>
+            </div>
 
             {/* CONSOLIDATED CARD */}
-            <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm overflow-hidden">
+            <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
               <div className="flex items-center gap-2.5 px-5 py-4 border-b border-border/30">
                 <ShoppingBasket className="h-4 w-4 text-amber-400" />
-                <h3 className="text-sm font-black text-foreground/80">Consolidado</h3>
-                <span className="ml-auto text-[10px] font-bold text-muted-foreground/40">
+                <h3 className="text-base font-black text-foreground">Consolidado</h3>
+                <span className="ml-auto text-xs font-medium text-muted-foreground/60">
                   Total a pedir al proveedor
                 </span>
               </div>
@@ -337,14 +415,14 @@ export default function PurchaseOrderDetailPage() {
                       className="flex items-center justify-between px-5 py-3.5"
                     >
                       <div className="flex flex-col gap-0.5 flex-1 min-w-0 pr-4">
-                        <p className="font-bold text-sm text-foreground truncate">
+                        <p className="font-bold text-base text-foreground truncate">
                           {line.productName}
                         </p>
-                        <p className="text-[11px] text-muted-foreground/50 font-mono">
+                        <p className="text-xs text-muted-foreground/70">
                           {line.quantity} unidades × {formatChileanPeso(line.buyPriceSupplier)}
                         </p>
                       </div>
-                      <span className="font-black text-sm text-foreground shrink-0">
+                      <span className="font-black text-base text-foreground shrink-0">
                         {formatChileanPeso(line.buyPriceSupplier * line.quantity)}
                       </span>
                     </div>
@@ -354,14 +432,14 @@ export default function PurchaseOrderDetailPage() {
 
               <div className="px-5 py-4 border-t border-border/30 bg-muted/20 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">
                     Total Estimado
                   </p>
-                  <p className="text-2xl font-black text-foreground tracking-tighter mt-0.5">
+                  <p className="text-3xl font-black text-foreground tracking-tighter mt-0.5">
                     {formatChileanPeso(displayTotal)}
                   </p>
                 </div>
-                <span className="text-xs font-bold text-muted-foreground/30">
+                <span className="text-sm font-medium text-muted-foreground/60">
                   {displayLines.length} {displayLines.length === 1 ? "producto" : "productos"}
                 </span>
               </div>
@@ -370,7 +448,7 @@ export default function PurchaseOrderDetailPage() {
             {/* INCLUDED ORDERS — view mode */}
             {!isEditing && (
               <section className="flex flex-col gap-2">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70 px-1">
                   Pedidos Incluidos ({purchaseOrder.orders.length})
                 </h3>
 
@@ -388,25 +466,25 @@ export default function PurchaseOrderDetailPage() {
                     return (
                       <div
                         key={order.orderId}
-                        className="rounded-xl border border-border/40 bg-card/30 p-4"
+                        className="rounded-xl border border-border/40 bg-card shadow-sm p-4"
                       >
                         <div className="flex items-center justify-between mb-2.5">
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">
+                            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">
                               Pedido #{order.orderId}
                             </p>
-                            <p className="font-bold text-sm text-foreground">
+                            <p className="font-bold text-base text-foreground">
                               {order.localName || "Cliente"}
                             </p>
                           </div>
-                          <span className="font-black text-sm text-foreground">
+                          <span className="font-black text-base text-foreground">
                             {formatChileanPeso(orderTotal)}
                           </span>
                         </div>
-                        <div className="rounded-lg bg-muted/30 border border-border/20 px-3 py-1.5 divide-y divide-border/15">
+                        <div className="divide-y divide-border/20 mt-1">
                           {order.lines.map((line, idx) => (
-                            <div key={idx} className="flex justify-between py-1.5 text-xs">
-                              <span className="text-muted-foreground/60 truncate flex-1 pr-3">
+                            <div key={idx} className="flex justify-between py-2 text-sm">
+                              <span className="text-muted-foreground/70 truncate flex-1 pr-3">
                                 {line.quantity}x {line.productName}
                               </span>
                             </div>
@@ -423,10 +501,10 @@ export default function PurchaseOrderDetailPage() {
             {isEditing && (
               <section className="flex flex-col gap-3">
                 <div>
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1 mb-1">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70 px-1 mb-1">
                     Seleccioná los pedidos a incluir
                   </h3>
-                  <p className="text-xs text-muted-foreground/40 px-1">
+                  <p className="text-sm text-muted-foreground/60 px-1">
                     Tocá una tarjeta para incluirla o excluirla
                   </p>
                 </div>
@@ -479,23 +557,14 @@ export default function PurchaseOrderDetailPage() {
         <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-6 pt-10 bg-gradient-to-t from-background via-background/95 to-transparent">
           <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
             <div className="flex flex-col shrink-0">
-              <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/50">
+              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">
                 Seleccionados
               </span>
-              <span className="text-xl font-black text-foreground leading-tight">
+              <span className="text-2xl font-black text-foreground leading-tight">
                 {effectiveSelectedOrderIds.length} {effectiveSelectedOrderIds.length === 1 ? "Pedido" : "Pedidos"}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCancelEdit}
-                className="h-10 rounded-xl text-muted-foreground/70 hover:bg-muted/60 gap-1.5"
-              >
-                <X className="h-3.5 w-3.5" />
-                Cancelar
-              </Button>
               <Button
                 onClick={handleSaveChanges}
                 disabled={selectedOrderIds.length === 0 || updateMutation.isPending}

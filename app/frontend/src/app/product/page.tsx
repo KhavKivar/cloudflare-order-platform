@@ -72,45 +72,45 @@ export default function ProductListPage() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 px-4 pt-6 pb-8 sm:px-6">
 
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
-            <Package className="h-5 w-5 text-primary" />
+        {/* HEADER CARD */}
+        <div className="rounded-2xl border border-border/50 bg-card shadow-sm p-4 flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
+              <Package className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-black text-foreground leading-tight">Productos</h1>
+              {data && (
+                <p className="text-xs text-muted-foreground/60 font-medium">
+                  {data.products.length} {data.products.length === 1 ? "producto" : "productos"}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={() => navigate("/product/new")}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-colors"
+            >
+              <Plus className="h-5 w-5" />
+            </button>
           </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-black text-foreground leading-tight">Productos</h1>
-            {data && (
-              <p className="text-[11px] text-muted-foreground/60 font-medium">
-                {data.products.length} {data.products.length === 1 ? "producto" : "productos"}
-              </p>
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 pointer-events-none z-10" />
+            <Input
+              type="text"
+              placeholder="Buscar por nombre o tipo..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="rounded-full bg-background border-border/40 pl-11 pr-10 h-11 focus-visible:ring-primary/30 focus-visible:border-primary/30"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted/60 text-muted-foreground/60 hover:text-foreground transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
             )}
           </div>
-          <button
-            onClick={() => navigate("/product/new")}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-colors"
-          >
-            <Plus className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 pointer-events-none z-10" />
-          <Input
-            type="text"
-            placeholder="Buscar por nombre o tipo..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="rounded-full bg-muted/40 border-border/40 pl-11 pr-10 h-11 focus-visible:ring-primary/30 focus-visible:border-border/80"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted/60 text-muted-foreground/60 hover:text-foreground transition-colors"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
         </div>
 
         {/* States */}
@@ -173,7 +173,7 @@ function ProductCard({
   const typeLabel = TYPE_LABELS[product.type] ?? product.type;
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm p-4">
+    <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card shadow-sm p-4">
       <div className="flex-1 min-w-0">
         <p className="font-bold text-sm text-foreground leading-tight truncate">
           {product.name}

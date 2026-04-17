@@ -1,13 +1,18 @@
 import { Button } from "@/components/ui/button";
-import httpClient from "@/lib/api-provider";
 import type { Client } from "@/features/client/api/client.schema";
 import { createOrder } from "@/features/orders/api/create-order";
 import type { OrderCreateDto } from "@/features/orders/api/order.schema";
 import type { Product } from "@/features/orders/api/product.schema";
+import { type OrderListItem, type OrdersResponse } from "@/features/orders/api/get-orders";
+import {
+  queryKeys,
+  queryFns,
+  type ProductsResponse,
+} from "@/features/orders/config/constants";
 import { cn } from "@/lib/utils";
 import { formatChileanPeso } from "@/utils/format-currency";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   Barcode,
@@ -28,30 +33,40 @@ import z from "zod";
 
 const schema = z.object({
   clientId: z.number("El cliente es obligatorio"),
-  item: z.string("El producto es obligatorio").nonempty("El producto es obligatorio"),
+  item: z
+    .string("El producto es obligatorio")
+    .nonempty("El producto es obligatorio"),
   quantity: z.string().nonempty("La cantidad debe ser al menos 1"),
   pricePerUnit: z.string().nonempty("El precio es obligatorio"),
 });
 
 type FormFields = z.infer<typeof schema>;
-type ProductQuery = { products: Product[] };
 type ClientQuery = { clients: Client[] };
 
 export default function OrdersPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { register, handleSubmit, setValue, watch, formState: { errors } } =
-    useForm<FormFields>({ resolver: zodResolver(schema) });
+  const queryClient = useQueryClient();
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<FormFields>({ resolver: zodResolver(schema) });
 
-  const { isPending: productsPending, error: productsError, data: productsData } =
-    useQuery<ProductQuery>({
-      queryKey: ["products"],
-      queryFn: () => httpClient.get("/products").then((res) => res.data),
-    });
+  const {
+    isPending: productsPending,
+    error: productsError,
+    data: productsData,
+  } = useQuery<ProductsResponse>({
+    queryKey: queryKeys.products,
+    queryFn: queryFns.products,
+  });
 
   const { isPending, error, data } = useQuery<ClientQuery>({
-    queryKey: ["clients"],
-    queryFn: () => httpClient.get("/clients").then((res) => res.data),
+    queryKey: queryKeys.clients,
+    queryFn: queryFns.clients,
   });
 
   const isLoadingData = isPending || productsPending;
@@ -62,7 +77,10 @@ export default function OrdersPage() {
   const [selectProduct, setSelectProduct] = useState<Product | null>(null);
   const mutation = useMutation({ mutationFn: createOrder });
 
-  const [order, setOrder] = useState<OrderCreateDto>({ clientId: 0, items: [] });
+  const [order, setOrder] = useState<OrderCreateDto>({
+    clientId: 0,
+    items: [],
+  });
 
   // Restore state when returning from select pages or via back button
   useEffect(() => {
@@ -92,7 +110,8 @@ export default function OrdersPage() {
               setValue("pricePerUnit", String(d.selectProduct.sellPriceClient));
             }
           }
-          if (d.formValues?.quantity) setValue("quantity", d.formValues.quantity);
+          if (d.formValues?.quantity)
+            setValue("quantity", d.formValues.quantity);
           sessionStorage.removeItem("order-new-draft");
         }
       } catch {}
@@ -107,21 +126,30 @@ export default function OrdersPage() {
         setValue("pricePerUnit", String(state.selectProduct.sellPriceClient));
       }
     }
-    if (state.formValues?.quantity) setValue("quantity", state.formValues.quantity);
+    if (state.formValues?.quantity)
+      setValue("quantity", state.formValues.quantity);
 
     if (state.selectedClient) {
       setSelectClient(state.selectedClient);
-      setValue("clientId", Number(state.selectedClient.id), { shouldValidate: true });
-      setOrder((prev) => ({ ...prev, clientId: Number(state.selectedClient!.id) }));
+      setValue("clientId", Number(state.selectedClient.id), {
+        shouldValidate: true,
+      });
+      setOrder((prev) => ({
+        ...prev,
+        clientId: Number(state.selectedClient!.id),
+      }));
     } else if (state.selectClient !== undefined) {
       setSelectClient(state.selectClient);
-      if (state.selectClient) setValue("clientId", Number(state.selectClient.id));
+      if (state.selectClient)
+        setValue("clientId", Number(state.selectClient.id));
     }
 
     if (state.selectedProduct) {
       setSelectProduct(state.selectedProduct);
       setValue("item", state.selectedProduct.name, { shouldValidate: true });
-      setValue("pricePerUnit", String(state.selectedProduct.sellPriceClient), { shouldValidate: true });
+      setValue("pricePerUnit", String(state.selectedProduct.sellPriceClient), {
+        shouldValidate: true,
+      });
     }
 
     navigate(location.pathname, { replace: true, state: null });
@@ -167,9 +195,37 @@ export default function OrdersPage() {
       return;
     }
     mutation.mutate(order, {
-      onSuccess: () => {
+      onSuccess: (created) => {
         sessionStorage.removeItem("order-new-draft");
-        navigate("/order", { replace: true, state: { toast: "Pedido manual creado con éxito" } });
+
+        const optimisticOrder: OrderListItem = {
+          orderId: created.id,
+          purchaseOrderId: created.purchaseOrderId,
+          createdAt: created.createdAt,
+          status: created.status,
+          localName: selectClient?.localName ?? null,
+          phone: selectClient?.phone ?? null,
+          address: selectClient?.address ?? null,
+          lines: order.items.map((item) => ({
+            lineId: 0,
+            productId: item.productId,
+            quantity: item.quantity,
+            pricePerUnit: item.pricePerUnit,
+            lineTotal: item.pricePerUnit * item.quantity,
+            productName: productsData?.products.find((p) => p.id === item.productId)?.name ?? null,
+            buyPriceSupplier: 0,
+          })),
+        };
+
+        queryClient.setQueryData<OrdersResponse>(queryKeys.orders, (old) => ({
+          orders: [optimisticOrder, ...(old?.orders ?? [])],
+        }));
+        queryClient.invalidateQueries({ queryKey: queryKeys.orders });
+
+        navigate("/order", {
+          replace: true,
+          state: { toast: "Pedido manual creado con éxito" },
+        });
       },
       onError: () => {
         toast.error("No se pudo crear el pedido");
@@ -180,7 +236,9 @@ export default function OrdersPage() {
   const onSubmit = handleSubmit((data) => {
     const pricePerUnit = Number(data.pricePerUnit) || 0;
     const quantity = Number(data.quantity) || 0;
-    const productIndex = order.items.findIndex((item) => item.productId === selectProduct?.id);
+    const productIndex = order.items.findIndex(
+      (item) => item.productId === selectProduct?.id,
+    );
     if (productIndex !== -1) {
       const newItems = [...order.items];
       newItems[productIndex].quantity += quantity;
@@ -189,7 +247,10 @@ export default function OrdersPage() {
     } else {
       setOrder({
         ...order,
-        items: [...order.items, { productId: selectProduct?.id || 0, quantity, pricePerUnit }],
+        items: [
+          ...order.items,
+          { productId: selectProduct?.id || 0, quantity, pricePerUnit },
+        ],
       });
     }
     setSelectProduct(null);
@@ -200,7 +261,6 @@ export default function OrdersPage() {
 
   return (
     <div className="min-h-screen bg-background">
-
       {/* Loading */}
       {isLoadingData && (
         <div className="flex flex-col items-center justify-center py-32 text-muted-foreground">
@@ -215,14 +275,15 @@ export default function OrdersPage() {
           <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-10 text-center text-destructive">
             <AlertCircle className="mx-auto size-10 mb-3 opacity-50" />
             <p className="text-lg font-black">Error de Sincronización</p>
-            <p className="mt-1 text-sm opacity-70">No se pudo cargar productos o clientes.</p>
+            <p className="mt-1 text-sm opacity-70">
+              No se pudo cargar productos o clientes.
+            </p>
           </div>
         </div>
       )}
 
       {isSuccessData && !isLoadingData && !isErrorData && (
         <div className="mx-auto w-full max-w-lg px-4 pt-5 pb-40 sm:px-5 flex flex-col gap-5">
-
           {/* 1. CLIENT SELECTOR */}
           <button
             type="button"
@@ -242,12 +303,14 @@ export default function OrdersPage() {
               <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
             )}
             <div className="flex items-center gap-3 relative z-10 flex-1 min-w-0">
-              <div className={cn(
-                "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border",
-                selectClient
-                  ? "bg-background border-primary/30 text-primary"
-                  : "bg-primary/10 border-primary/20 text-primary",
-              )}>
+              <div
+                className={cn(
+                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border",
+                  selectClient
+                    ? "bg-background border-primary/30 text-primary"
+                    : "bg-primary/10 border-primary/20 text-primary",
+                )}
+              >
                 <Store className="size-5" />
               </div>
               <div className="min-w-0 flex flex-col">
@@ -272,21 +335,29 @@ export default function OrdersPage() {
                 )}
               </div>
             </div>
-            <div className={cn(
-              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full ml-2 relative z-10",
-              selectClient ? "bg-primary/20 text-primary" : "bg-primary/15 text-primary",
-            )}>
+            <div
+              className={cn(
+                "flex h-8 w-8 shrink-0 items-center justify-center rounded-full ml-2 relative z-10",
+                selectClient
+                  ? "bg-primary/20 text-primary"
+                  : "bg-primary/15 text-primary",
+              )}
+            >
               <Plus className={cn("size-3.5", selectClient && "rotate-45")} />
             </div>
           </button>
 
           {/* 2. ADD PRODUCT CARD */}
-          <div className={cn(
-            "rounded-2xl border bg-card shadow-sm overflow-hidden transition-all duration-200",
-            selectClient ? "border-border/40" : "border-border/20 opacity-50",
-          )}>
+          <div
+            className={cn(
+              "rounded-2xl border bg-card shadow-sm overflow-hidden transition-all duration-200",
+              selectClient ? "border-border/40" : "border-border/20 opacity-50",
+            )}
+          >
             <div className="flex items-center justify-between px-5 py-4 border-b border-border/30">
-              <h3 className="text-base font-black text-foreground">Configurar Item</h3>
+              <h3 className="text-base font-black text-foreground">
+                Configurar Item
+              </h3>
               {!selectClient ? (
                 <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/40">
                   Seleccioná un cliente primero
@@ -297,7 +368,6 @@ export default function OrdersPage() {
             </div>
 
             <form onSubmit={onSubmit} className="p-4 flex flex-col gap-4">
-
               {/* Product search trigger */}
               <button
                 type="button"
@@ -317,9 +387,23 @@ export default function OrdersPage() {
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50">
-                    <Package className={cn("size-4", selectProduct ? "text-primary" : "text-muted-foreground/50")} />
+                    <Package
+                      className={cn(
+                        "size-4",
+                        selectProduct
+                          ? "text-primary"
+                          : "text-muted-foreground/50",
+                      )}
+                    />
                   </div>
-                  <span className={cn("text-base truncate", selectProduct ? "text-foreground font-bold" : "text-muted-foreground/60")}>
+                  <span
+                    className={cn(
+                      "text-base truncate",
+                      selectProduct
+                        ? "text-foreground font-bold"
+                        : "text-muted-foreground/60",
+                    )}
+                  >
                     {selectProduct?.name ?? "Buscar producto..."}
                   </span>
                 </div>
@@ -327,7 +411,9 @@ export default function OrdersPage() {
               </button>
 
               {errors.item && (
-                <p className="text-xs font-bold text-destructive -mt-2 pl-1">{errors.item.message}</p>
+                <p className="text-xs font-bold text-destructive -mt-2 pl-1">
+                  {errors.item.message}
+                </p>
               )}
 
               {/* Price + Qty */}
@@ -338,7 +424,9 @@ export default function OrdersPage() {
                     Precio
                   </label>
                   <div className="relative flex items-center rounded-xl border border-border/50 bg-muted/30 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all overflow-hidden">
-                    <span className="pl-4 text-muted-foreground/50 font-mono text-sm pointer-events-none shrink-0">$</span>
+                    <span className="pl-4 text-muted-foreground/50 font-mono text-sm pointer-events-none shrink-0">
+                      $
+                    </span>
                     <input
                       {...register("pricePerUnit")}
                       type="number"
@@ -347,7 +435,9 @@ export default function OrdersPage() {
                     />
                   </div>
                   {errors.pricePerUnit && (
-                    <p className="text-[10px] font-bold text-destructive mt-1 pl-1">{errors.pricePerUnit.message}</p>
+                    <p className="text-[10px] font-bold text-destructive mt-1 pl-1">
+                      {errors.pricePerUnit.message}
+                    </p>
                   )}
                 </div>
 
@@ -385,7 +475,9 @@ export default function OrdersPage() {
                     </button>
                   </div>
                   {errors.quantity && (
-                    <p className="text-[10px] font-bold text-destructive mt-1 pl-1">{errors.quantity.message}</p>
+                    <p className="text-[10px] font-bold text-destructive mt-1 pl-1">
+                      {errors.quantity.message}
+                    </p>
                   )}
                 </div>
               </div>
@@ -419,7 +511,9 @@ export default function OrdersPage() {
                   className="flex items-center justify-between py-3.5 px-4 bg-card border border-border/40 shadow-sm rounded-xl"
                 >
                   <div className="flex flex-col gap-0.5 flex-1 min-w-0 pr-3">
-                    <span className="font-bold text-base text-foreground truncate">{item.name}</span>
+                    <span className="font-bold text-base text-foreground truncate">
+                      {item.name}
+                    </span>
                     <span className="text-sm text-muted-foreground/70 font-mono">
                       {item.quantity} × {formatChileanPeso(item.pricePerUnit)}
                     </span>
@@ -448,7 +542,6 @@ export default function OrdersPage() {
               <p className="text-sm font-bold">El pedido está vacío</p>
             </div>
           )}
-
         </div>
       )}
 
@@ -478,9 +571,15 @@ export default function OrdersPage() {
             className="w-full h-14 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-base shadow-lg shadow-primary/20 disabled:opacity-40"
           >
             {mutation.isPending ? (
-              <><Loader2 className="mr-2 size-4 animate-spin" />Confirmando...</>
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                Confirmando...
+              </>
             ) : (
-              <><CheckCircle className="mr-2 size-5" />Confirmar Pedido</>
+              <>
+                <CheckCircle className="mr-2 size-5" />
+                Confirmar Pedido
+              </>
             )}
           </Button>
         </div>

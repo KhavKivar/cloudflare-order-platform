@@ -1,4 +1,4 @@
-import { eq, or } from "drizzle-orm";
+import { eq, like, or } from "drizzle-orm";
 import { DrizzleD1Database } from "drizzle-orm/d1";
 import { clients } from "../../db/schema.js";
 import { CLIENT_EXISTS, CLIENT_NOT_FOUND } from "../../utils/error_enum.js";
@@ -37,6 +37,17 @@ export class ClientService {
       .select()
       .from(clients)
       .where(eq(clients.phoneId, phoneId))
+      .all();
+
+    return (client as Client) ?? null;
+  }
+
+  async getClientByLocalName(localName: string): Promise<Optional<Client>> {
+    const [client] = await this.db
+      .select()
+      .from(clients)
+      .where(like(clients.localName, `%${localName}%`))
+      .limit(1)
       .all();
 
     return (client as Client) ?? null;

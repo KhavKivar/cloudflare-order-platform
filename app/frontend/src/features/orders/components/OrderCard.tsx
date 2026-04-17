@@ -41,6 +41,7 @@ type OrderCardProps = {
   onClick?: () => void;
   isSelected: boolean;
   isUpdating?: boolean;
+  isDeleting?: boolean;
 };
 
 const STATUS_LABELS: Record<OrderCardProps["status"], string> = {
@@ -104,6 +105,7 @@ export default function OrderCard({
   items,
   isSelected,
   isUpdating = false,
+  isDeleting = false,
   onEdit,
   onClick,
   onDelete,
@@ -305,12 +307,16 @@ export default function OrderCard({
                       </DialogClose>
                       <Button
                         variant="destructive"
+                        disabled={isDeleting}
                         onClick={(e) => {
                           e.stopPropagation();
                           onDelete(id);
                         }}
                       >
-                        Eliminar Pedido
+                        {isDeleting ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : null}
+                        {isDeleting ? "Eliminando..." : "Eliminar Pedido"}
                       </Button>
                     </DialogFooter>
                   </DialogContent>

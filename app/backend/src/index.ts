@@ -23,7 +23,8 @@ app.use(
       ];
       if (
         allowedOrigins.includes(origin) ||
-        origin.endsWith("vasvani.pages.dev")
+        origin.endsWith("vasvani.pages.dev") ||
+        origin.startsWith("http://192.168.")
       ) {
         return origin;
       }

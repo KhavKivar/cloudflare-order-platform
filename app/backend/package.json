@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev --remote --env-file .env",
-    "dev-db-local": "wrangler dev --local --env-file .env",
+    "dev-local": "wrangler dev --local --env-file .env",
     "deploy": "wrangler deploy",
     "build": "tsc",
     "typecheck": "tsc --noEmit",

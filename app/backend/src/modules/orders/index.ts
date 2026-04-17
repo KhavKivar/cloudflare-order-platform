@@ -3,7 +3,8 @@ import { zValidator } from "@hono/zod-validator";
 import { Bindings, getDb } from "../../db/index.js";
 import { OrderService } from "./orders.service.js";
 import { orderCreateSchema, orderStatusUpdateSchema } from "./orders.schema.js";
-import { CLIENT_NOT_FOUND, ORDER_NOT_FOUND, PRODUCT_NOT_FOUND } from "../../utils/error_enum.js";
+import { CLIENT_NOT_FOUND, ORDER_ARE_NOT_AVAILABLE, ORDER_NOT_FOUND, PRODUCT_NOT_FOUND, errorMessage } from "../../utils/error_enum.js";
+import { PurchaseOrderService } from "../purchase_orders/purchase_orders.service.js";
 
 const ordersApp = new Hono<{ Bindings: Bindings }>();
 
@@ -11,6 +12,27 @@ ordersApp.get("/", async (c) => {
   const db = getDb(c.env);
   const orderService = new OrderService(db);
   const orders = await orderService.getOrders();
+  return c.json({ orders });
+});
+
+ordersApp.get("/client/:clientId", async (c) => {
+  const clientId = parseInt(c.req.param("clientId"));
+  const db = getDb(c.env);
+  const orderService = new OrderService(db);
+  const orders = await orderService.getOrdersByClientId(clientId);
+  return c.json({ orders });
+});
+
+ordersApp.get("/available/:id", async (c) => {
+  const id = parseInt(c.req.param("id"));
+  const db = getDb(c.env);
+  const poService = new PurchaseOrderService(db);
+  const orderService = new OrderService(db);
+
+  const po = await poService.getPurchaseOrderById(id);
+  if (!po) return c.json({ message: errorMessage[ORDER_ARE_NOT_AVAILABLE] }, 404);
+
+  const orders = await orderService.getAvailableOrdersForPurchaseOrder(id);
   return c.json({ orders });
 });
 

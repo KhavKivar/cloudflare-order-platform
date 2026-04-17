@@ -17,16 +17,21 @@ import {
 } from "@/components/ui/dialog";
 import FormField from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
-import httpClient from "@/lib/api-provider";
 import type { Client } from "@/features/client/api/client.schema";
-import { getOrder, type OrderDetail } from "@/features/orders/api/get-order";
+import { type OrderDetail } from "@/features/orders/api/get-order";
+import { type OrdersResponse } from "@/features/orders/api/get-orders";
+import {
+  queryKeys,
+  queryFns,
+  type ProductsResponse,
+} from "@/features/orders/config/constants";
 import type { OrderCreateDto } from "@/features/orders/api/order.schema";
 import type { Product } from "@/features/orders/api/product.schema";
 import { updateOrder } from "@/features/orders/api/update-order";
 import { cn } from "@/lib/utils";
 import { formatChileanPeso } from "@/utils/format-currency";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   Package,
@@ -54,7 +59,6 @@ const schema = z.object({
 });
 
 type FormFields = z.infer<typeof schema>;
-type ProductQuery = { products: Product[] };
 type ClientQuery = { clients: Client[] };
 
 export default function OrdersEditPage() {
@@ -76,9 +80,9 @@ export default function OrdersEditPage() {
     isPending: productsPending,
     error: productsError,
     data: productsData,
-  } = useQuery<ProductQuery>({
-    queryKey: ["products"],
-    queryFn: () => httpClient.get("/products").then((res) => res.data),
+  } = useQuery<ProductsResponse>({
+    queryKey: queryKeys.products,
+    queryFn: queryFns.products,
   });
 
   const {
@@ -86,8 +90,8 @@ export default function OrdersEditPage() {
     error: clientsError,
     data: clientsData,
   } = useQuery<ClientQuery>({
-    queryKey: ["clients"],
-    queryFn: () => httpClient.get("/clients").then((res) => res.data),
+    queryKey: queryKeys.clients,
+    queryFn: queryFns.clients,
   });
 
   const {
@@ -95,15 +99,15 @@ export default function OrdersEditPage() {
     error: orderError,
     data: orderData,
   } = useQuery<OrderDetail>({
-    queryKey: ["orders", orderId],
-    queryFn: () => getOrder(orderId),
+    queryKey: queryKeys.order(orderId),
+    queryFn: queryFns.order(orderId),
     enabled: isOrderIdValid,
   });
 
   const isLoadingData = productsPending || clientsPending || orderPending;
   const isErrorData = productsError || clientsError || orderError;
   const isSuccessData = orderData && productsData && clientsData;
-
+  const queryClient = useQueryClient();
   const [selectClient, setSelectClient] = useState<Client | null>(null);
 
   const [selectProduct, setSelectProduct] = useState<Product | null>(null);
@@ -151,14 +155,51 @@ export default function OrdersEditPage() {
 
   const updateMutation = useMutation({
     mutationFn: (payload: OrderCreateDto) => updateOrder(orderId, payload),
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.orders });
+      await queryClient.cancelQueries({ queryKey: queryKeys.order(orderId) });
+
+      const snapshotList = queryClient.getQueryData<OrdersResponse>(queryKeys.orders);
+      const snapshotDetail = queryClient.getQueryData<OrderDetail>(queryKeys.order(orderId));
+
+      const optimisticLines = payload.items.map((item) => ({
+        lineId: 0,
+        productId: item.productId,
+        quantity: item.quantity,
+        pricePerUnit: item.pricePerUnit,
+        lineTotal: item.pricePerUnit * item.quantity,
+        productName: productsData?.products.find((p) => p.id === item.productId)?.name ?? null,
+        buyPriceSupplier: 0,
+      }));
+
+      queryClient.setQueryData<OrdersResponse>(queryKeys.orders, (old) => {
+        if (!old) return old;
+        return {
+          orders: old.orders.map((o) =>
+            o.orderId === orderId ? { ...o, lines: optimisticLines } : o,
+          ),
+        };
+      });
+
+      queryClient.setQueryData<OrderDetail>(queryKeys.order(orderId), (old) => {
+        if (!old) return old;
+        return { ...old, lines: optimisticLines };
+      });
+
+      return { snapshotList, snapshotDetail };
+    },
+    onError: (_, __, context) => {
+      if (context?.snapshotList) queryClient.setQueryData(queryKeys.orders, context.snapshotList);
+      if (context?.snapshotDetail) queryClient.setQueryData(queryKeys.order(orderId), context.snapshotDetail);
+      toast.error("No se pudo actualizar el pedido");
+    },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders });
+      queryClient.invalidateQueries({ queryKey: queryKeys.order(orderId) });
       navigate("/order", {
         replace: true,
         state: { toast: "Pedido actualizado con éxito" },
       });
-    },
-    onError: () => {
-      toast.error("No se pudo actualizar el pedido");
     },
   });
 
@@ -329,7 +370,8 @@ export default function OrdersEditPage() {
                             <div
                               className={cn(
                                 "flex h-12 w-full items-center justify-between rounded-xl bg-muted px-4 ring-1 ring-border",
-                                selectProduct && "bg-primary/10 ring-primary/30",
+                                selectProduct &&
+                                  "bg-primary/10 ring-primary/30",
                               )}
                             >
                               <div className="flex items-center gap-3 min-w-0 flex-1">

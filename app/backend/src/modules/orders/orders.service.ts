@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, isNull, or } from "drizzle-orm";
 import { DrizzleD1Database } from "drizzle-orm/d1";
 import { clients, orderLines, orders, products } from "../../db/schema.js";
 import {
@@ -30,6 +30,7 @@ export class OrderService {
         orderId: orders.id,
         clientId: orders.clientId,
         localName: clients.localName,
+        address: clients.address,
         lineId: orderLines.id,
         productId: orderLines.productId,
         pricePerUnit: orderLines.pricePerUnit,
@@ -57,6 +58,7 @@ export class OrderService {
           clientId: row.clientId,
           localName: row.localName,
           phone: row.phone,
+          address: row.address,
           lines: [],
           purchaseOrderId: row.purchaseOrderId,
           status: row.status as any,
@@ -122,6 +124,7 @@ export class OrderService {
         orderId: orders.id,
         clientId: orders.clientId,
         localName: clients.localName,
+        address: clients.address,
         lineId: orderLines.id,
         productId: orderLines.productId,
         pricePerUnit: orderLines.pricePerUnit,
@@ -148,6 +151,7 @@ export class OrderService {
       clientId: rows[0].clientId,
       localName: rows[0].localName,
       phone: rows[0].phone,
+      address: rows[0].address,
       lines: [],
       purchaseOrderId: rows[0].purchaseOrderId,
       status: rows[0].status as any,
@@ -166,6 +170,118 @@ export class OrderService {
     }
 
     return order;
+  }
+
+  async getOrdersByClientId(clientId: number): Promise<OrderListItem[]> {
+    const rows = await this.db
+      .select({
+        createdAt: orders.createdAt,
+        orderId: orders.id,
+        clientId: orders.clientId,
+        localName: clients.localName,
+        address: clients.address,
+        lineId: orderLines.id,
+        productId: orderLines.productId,
+        pricePerUnit: orderLines.pricePerUnit,
+        quantity: orderLines.quantity,
+        lineTotal: orderLines.lineTotal,
+        phone: clients.phone,
+        productName: products.name,
+        buyPriceSupplier: products.buyPriceSupplier,
+        purchaseOrderId: orders.purchaseOrderId,
+        status: orders.status,
+      })
+      .from(orders)
+      .innerJoin(clients, eq(orders.clientId, clients.id))
+      .innerJoin(orderLines, eq(orderLines.orderId, orders.id))
+      .leftJoin(products, eq(orderLines.productId, products.id))
+      .where(eq(orders.clientId, clientId))
+      .all();
+
+    const ordersMap = new Map<number, OrderListItem>();
+    for (const row of rows) {
+      let order = ordersMap.get(row.orderId);
+      if (!order) {
+        order = {
+          orderId: row.orderId,
+          createdAt: row.createdAt,
+          clientId: row.clientId,
+          localName: row.localName,
+          phone: row.phone,
+          address: row.address,
+          lines: [],
+          purchaseOrderId: row.purchaseOrderId,
+          status: row.status as any,
+        };
+        ordersMap.set(row.orderId, order);
+      }
+      order.lines.push({
+        lineId: row.lineId,
+        productId: row.productId,
+        pricePerUnit: row.pricePerUnit,
+        quantity: row.quantity,
+        lineTotal: row.lineTotal ?? 0,
+        productName: row.productName,
+        buyPriceSupplier: row.buyPriceSupplier ?? 0,
+      });
+    }
+    return Array.from(ordersMap.values());
+  }
+
+  async getAvailableOrdersForPurchaseOrder(purchaseOrderId: number): Promise<OrderListItem[]> {
+    const rows = await this.db
+      .select({
+        createdAt: orders.createdAt,
+        orderId: orders.id,
+        clientId: orders.clientId,
+        localName: clients.localName,
+        address: clients.address,
+        lineId: orderLines.id,
+        productId: orderLines.productId,
+        pricePerUnit: orderLines.pricePerUnit,
+        quantity: orderLines.quantity,
+        lineTotal: orderLines.lineTotal,
+        phone: clients.phone,
+        productName: products.name,
+        buyPriceSupplier: products.buyPriceSupplier,
+        purchaseOrderId: orders.purchaseOrderId,
+        status: orders.status,
+      })
+      .from(orders)
+      .innerJoin(clients, eq(orders.clientId, clients.id))
+      .innerJoin(orderLines, eq(orderLines.orderId, orders.id))
+      .leftJoin(products, eq(orderLines.productId, products.id))
+      .where(or(isNull(orders.purchaseOrderId), eq(orders.purchaseOrderId, purchaseOrderId)))
+      .all();
+
+    const ordersMap = new Map<number, OrderListItem>();
+    for (const row of rows) {
+      let order = ordersMap.get(row.orderId);
+      if (!order) {
+        order = {
+          orderId: row.orderId,
+          createdAt: row.createdAt,
+          clientId: row.clientId,
+          localName: row.localName,
+          phone: row.phone,
+          address: row.address,
+          lines: [],
+          purchaseOrderId: row.purchaseOrderId,
+          status: row.status as any,
+        };
+        ordersMap.set(row.orderId, order);
+      }
+      order.lines.push({
+        lineId: row.lineId,
+        productId: row.productId,
+        pricePerUnit: row.pricePerUnit,
+        quantity: row.quantity,
+        lineTotal: row.lineTotal ?? 0,
+        productName: row.productName,
+        buyPriceSupplier: row.buyPriceSupplier ?? 0,
+      });
+    }
+    return Array.from(ordersMap.values());
   }
 
   async updateOrder(id: number, input: UpdateOrderInput) {

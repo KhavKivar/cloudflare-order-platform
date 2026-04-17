@@ -16,6 +16,7 @@ export type OrderListItem = {
   createdAt: string;
   localName: string | null;
   phone: string | null;
+  address: string | null;
   lines: OrderLine[];
   status: "pending" | "paid" | "delivered" | "delivered_paid" | "cancelled";
 };

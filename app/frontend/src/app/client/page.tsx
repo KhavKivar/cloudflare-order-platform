@@ -176,48 +176,48 @@ export default function ClientsAllPage() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 px-4 pt-6 pb-8 sm:px-6">
 
-        {/* HEADER */}
-        <header className="flex items-center justify-between gap-3 mb-1">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
-              <Users className="h-5 w-5 text-primary" />
+        {/* HEADER CARD */}
+        <div className="rounded-2xl border border-border/50 bg-card shadow-sm p-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
+                <Users className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-xl font-black tracking-tight text-foreground leading-none">
+                  Directorio
+                </h1>
+                <p className="text-xs font-medium text-muted-foreground/60 mt-0.5">
+                  {clients.length} clientes activos
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-black tracking-tight text-foreground leading-none">
-                Directorio
-              </h1>
-              <p className="text-xs font-medium text-muted-foreground/60 mt-0.5">
-                {clients.length} clientes activos
-              </p>
-            </div>
-          </div>
-          <Button
-            onClick={() => navigate("/client/new")}
-            size="icon"
-            className="h-10 w-10 rounded-full bg-primary hover:bg-primary/90 text-white shrink-0 shadow-lg shadow-primary/20"
-          >
-            <Plus className="h-5 w-5" />
-          </Button>
-        </header>
-
-        {/* SEARCH */}
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 pointer-events-none z-10" />
-          <Input
-            type="text"
-            placeholder="Buscar cliente..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="rounded-full bg-muted/40 border-border/40 pl-11 pr-10 h-11 focus-visible:ring-primary/30 focus-visible:border-border/80"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted/60 text-muted-foreground/60 hover:text-foreground transition-colors"
+            <Button
+              onClick={() => navigate("/client/new")}
+              size="icon"
+              className="h-10 w-10 rounded-full bg-primary hover:bg-primary/90 text-white shrink-0 shadow-lg shadow-primary/20"
             >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
+              <Plus className="h-5 w-5" />
+            </Button>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 pointer-events-none z-10" />
+            <Input
+              type="text"
+              placeholder="Buscar cliente..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="rounded-full bg-background border-border/40 pl-11 pr-10 h-11 focus-visible:ring-primary/30 focus-visible:border-primary/30"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted/60 text-muted-foreground/60 hover:text-foreground transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* FEEDBACK STATES */}
@@ -269,7 +269,7 @@ export default function ClientsAllPage() {
           {visibleClients.map((client) => (
             <article
               key={client.id}
-              className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm p-4 transition-colors hover:border-border/80"
+              className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card shadow-sm p-4 transition-colors hover:border-border/80"
             >
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
                 <Store className="h-5 w-5 text-primary" />

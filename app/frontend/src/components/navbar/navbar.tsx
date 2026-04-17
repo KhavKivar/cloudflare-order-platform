@@ -36,7 +36,7 @@ export default function Navbar({
   return (
     <nav
       className={cn(
-        "sticky top-0 z-50 w-full border-b border-border/60 bg-background/90 backdrop-blur-xl transition-all duration-300 py-3 md:py-4",
+        "sticky top-0 z-50 w-full border-b border-border/60 bg-card/90 backdrop-blur-xl transition-all duration-300 py-3 md:py-4",
         className,
       )}
     >

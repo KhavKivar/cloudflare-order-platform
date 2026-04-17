@@ -27,14 +27,15 @@ import {
 } from "@/components/ui/dialog";
 import { deletePurchaseOrder } from "@/features/purchase-orders/api/delete-purchase-order";
 import {
-  getPurchaseOrders,
   type PurchaseOrderLine,
   type PurchaseOrderListItem,
+  type PurchaseOrdersResponse,
 } from "@/features/purchase-orders/api/get-purchase-orders";
 import {
   updatePurchaseOrderStatus,
   type PurchaseOrderStatus,
 } from "@/features/purchase-orders/api/update-purchase-order-status";
+import { purchaseOrderKeys, purchaseOrderFns } from "@/features/purchase-orders/config/constants";
 import { cn } from "@/lib/utils";
 import { formatChileanPeso } from "@/utils/format-currency";
 
@@ -74,15 +75,19 @@ export default function PurchaseOrdersListPage() {
   const queryClient = useQueryClient();
 
   const { data, isPending, error } = useQuery({
-    queryKey: ["purchase-orders"],
-    queryFn: getPurchaseOrders,
+    queryKey: purchaseOrderKeys.all,
+    queryFn: purchaseOrderFns.all,
   });
 
   const deleteMutation = useMutation({
     mutationFn: deletePurchaseOrder,
-    onSuccess: () => {
+    onSuccess: (_, orderId) => {
       toast.success("Orden de compra eliminada correctamente");
-      queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+      queryClient.setQueryData<PurchaseOrdersResponse>(purchaseOrderKeys.all, (old) => {
+        if (!old) return old;
+        return { orders: old.orders.filter((o) => o.purchaseOrderId !== orderId) };
+      });
+      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.all });
     },
     onError: (mutationError) => {
       const message =
@@ -91,25 +96,40 @@ export default function PurchaseOrdersListPage() {
           : "No se pudo eliminar la orden de compra.";
       toast.error(message);
     },
+    onSettled: () => setDeletingOrderId(null),
   });
 
   const handleDelete = (orderId: number) => {
     if (deleteMutation.isPending) return;
+    setDeletingOrderId(orderId);
     deleteMutation.mutate(orderId);
   };
 
   const [openStripId, setOpenStripId] = useState<number | null>(null);
   const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
+  const [deletingOrderId, setDeletingOrderId] = useState<number | null>(null);
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: PurchaseOrderStatus }) =>
       updatePurchaseOrderStatus(id, status),
-    onMutate: ({ id }) => setUpdatingOrderId(id),
+    onMutate: async ({ id, status }) => {
+      await queryClient.cancelQueries({ queryKey: purchaseOrderKeys.all });
+      const snapshot = queryClient.getQueryData<PurchaseOrdersResponse>(purchaseOrderKeys.all);
+      queryClient.setQueryData<PurchaseOrdersResponse>(purchaseOrderKeys.all, (old) => {
+        if (!old) return old;
+        return { orders: old.orders.map((o) => o.purchaseOrderId === id ? { ...o, status } : o) };
+      });
+      setUpdatingOrderId(id);
+      return { snapshot };
+    },
+    onError: (_, __, context) => {
+      if (context?.snapshot) queryClient.setQueryData(purchaseOrderKeys.all, context.snapshot);
+      toast.error("No se pudo actualizar el estado.");
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.all });
       setOpenStripId(null);
     },
-    onError: () => toast.error("No se pudo actualizar el estado."),
     onSettled: () => setUpdatingOrderId(null),
   });
 
@@ -157,8 +177,8 @@ export default function PurchaseOrdersListPage() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 px-4 pt-6 pb-8 sm:px-6">
 
-        {/* HEADER */}
-        <header className="flex items-center justify-between gap-3 mb-1">
+        {/* HEADER CARD */}
+        <div className="rounded-2xl border border-border/50 bg-card shadow-sm p-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10 border border-amber-500/20">
               <Package className="h-5 w-5 text-amber-400" />
@@ -179,7 +199,7 @@ export default function PurchaseOrdersListPage() {
           >
             <Plus className="h-5 w-5" />
           </Button>
-        </header>
+        </div>
 
         {/* FEEDBACK STATES */}
         {isPending && (
@@ -227,7 +247,7 @@ export default function PurchaseOrdersListPage() {
               <article
                 key={order.purchaseOrderId}
                 className={cn(
-                  "rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm overflow-hidden border-t-2",
+                  "rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden border-t-2",
                   statusInfo.topBorder,
                 )}
               >
@@ -235,14 +255,14 @@ export default function PurchaseOrdersListPage() {
                 <div className="p-4 pb-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
-                      <span className="text-[10px] font-black font-mono text-muted-foreground/50">
+                      <span className="text-xs font-bold text-muted-foreground/60">
                         ID: #{order.purchaseOrderId}
                       </span>
                       <div className="flex items-center gap-2">
                         {isSwitchable ? (
                           <button
                             className={cn(
-                              "flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wider transition-opacity",
+                              "flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-wider transition-opacity",
                               statusInfo.style,
                               isUpdating && "opacity-50",
                             )}
@@ -257,14 +277,14 @@ export default function PurchaseOrdersListPage() {
                         ) : (
                           <span
                             className={cn(
-                              "rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wider",
+                              "rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-wider",
                               statusInfo.style,
                             )}
                           >
                             {statusInfo.label}
                           </span>
                         )}
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground/50">
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground/70">
                           <Calendar className="h-3 w-3" />
                           {new Date(order.createdAt).toLocaleDateString("es-CL", {
                             day: "2-digit",
@@ -310,9 +330,13 @@ export default function PurchaseOrdersListPage() {
                             </DialogClose>
                             <Button
                               variant="destructive"
+                              disabled={deletingOrderId === order.purchaseOrderId}
                               onClick={() => handleDelete(order.purchaseOrderId)}
                             >
-                              Eliminar Orden
+                              {deletingOrderId === order.purchaseOrderId ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              ) : null}
+                              {deletingOrderId === order.purchaseOrderId ? "Eliminando..." : "Eliminar Orden"}
                             </Button>
                           </DialogFooter>
                         </DialogContent>
@@ -322,25 +346,25 @@ export default function PurchaseOrdersListPage() {
                 </div>
 
                 {/* PRODUCT LINES */}
-                <div className="mx-4 rounded-xl bg-muted/30 border border-border/30 px-3 py-1.5 mb-3">
+                <div className="mx-4 rounded-xl bg-muted/40 border border-border/40 px-3 py-1.5 mb-3">
                   {(order.lines ?? []).slice(0, 2).map((line, i) => (
                     <div
                       key={line.productId}
                       className={cn(
-                        "flex justify-between items-center py-1.5",
+                        "flex justify-between items-center py-2",
                         i !== 0 && "border-t border-border/20",
                       )}
                     >
-                      <p className="text-xs font-bold text-foreground/80 truncate flex-1 pr-3">
+                      <p className="text-sm font-bold text-foreground truncate flex-1 pr-3">
                         {line.productName ?? "Producto"}
                       </p>
-                      <p className="text-xs text-muted-foreground/60 shrink-0">
+                      <p className="text-sm text-muted-foreground/70 shrink-0">
                         {line.quantity} × {formatChileanPeso(line.buyPriceSupplier)}
                       </p>
                     </div>
                   ))}
                   {(order.lines ?? []).length > 2 && (
-                    <div className="py-1.5 border-t border-border/20 text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/40">
+                    <div className="py-1.5 border-t border-border/20 text-xs font-bold text-muted-foreground/60">
                       + {(order.lines ?? []).length - 2} productos adicionales
                     </div>
                   )}
@@ -355,7 +379,7 @@ export default function PurchaseOrdersListPage() {
                         disabled={isUpdating}
                         onClick={() => handleStatusChange(order.purchaseOrderId, opt.value)}
                         className={cn(
-                          "flex-1 rounded-lg py-1.5 text-[10px] font-black uppercase tracking-wider transition-all border",
+                          "flex-1 rounded-lg py-2 text-xs font-bold uppercase tracking-wider transition-all border",
                           statusKey === opt.value
                             ? opt.activeClass
                             : "border-transparent text-muted-foreground/50 hover:bg-muted/60 hover:text-foreground",
@@ -371,10 +395,10 @@ export default function PurchaseOrdersListPage() {
                 {/* FOOTER: TOTAL + ACTION */}
                 <div className="flex items-end justify-between px-4 pb-4 border-t border-border/30 pt-3">
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 block mb-0.5">
+                    <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground/70 block mb-0.5">
                       Total Orden
                     </span>
-                    <span className="text-2xl font-black text-foreground tracking-tighter">
+                    <span className="text-3xl font-black text-foreground tracking-tighter">
                       {formatChileanPeso(orderTotal)}
                     </span>
                   </div>

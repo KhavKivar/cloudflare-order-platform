@@ -75,14 +75,14 @@ export default function ProductCreatePage() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex w-full max-w-md flex-col px-5 pt-6 pb-32">
 
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
+        {/* HEADER CARD */}
+        <div className="rounded-2xl border border-border/50 bg-card shadow-sm p-4 flex items-center gap-3 mb-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
             <Package className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h1 className="text-xl font-black text-foreground leading-tight">Nuevo producto</h1>
-            <p className="text-[11px] text-muted-foreground/60 font-medium">Completá los campos requeridos</p>
+            <p className="text-xs text-muted-foreground/60 font-medium">Completá los campos requeridos</p>
           </div>
         </div>
 
@@ -99,7 +99,7 @@ export default function ProductCreatePage() {
                 {...register("name")}
                 placeholder="Ej: Whisky Jack Daniel N°7 1 Lt"
                 className={cn(
-                  "w-full rounded-2xl border bg-muted/30 px-4 py-4 pl-11 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 transition-all",
+                  "w-full rounded-2xl border bg-card px-4 py-4 pl-11 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 transition-all",
                   errors.name
                     ? "border-destructive/50 bg-destructive/5 focus:ring-destructive/20"
                     : watchedName
@@ -131,7 +131,7 @@ export default function ProductCreatePage() {
                     "rounded-xl border py-2.5 px-1 text-[11px] font-black uppercase tracking-wide transition-all outline-none",
                     watchedType === type
                       ? "bg-orange-500/15 border-orange-500/40 text-orange-600 dark:text-orange-400"
-                      : "bg-muted/30 border-border/40 text-muted-foreground/60 hover:bg-muted/50",
+                      : "bg-card border-border/40 text-muted-foreground/60 hover:bg-muted/50",
                   )}
                 >
                   {TYPE_LABELS[type]}
@@ -156,7 +156,7 @@ export default function ProductCreatePage() {
                   {...register("sellPriceClient", { valueAsNumber: true })}
                   placeholder="15500"
                   className={cn(
-                    "w-full rounded-2xl border bg-muted/30 px-3 py-4 pl-9 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 transition-all",
+                    "w-full rounded-2xl border bg-card px-3 py-4 pl-9 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 transition-all",
                     errors.sellPriceClient
                       ? "border-destructive/50 focus:ring-destructive/20"
                       : "border-border/50 focus:ring-orange-500/20 focus:border-orange-500/40",
@@ -178,7 +178,7 @@ export default function ProductCreatePage() {
                   {...register("buyPriceSupplier", { valueAsNumber: true })}
                   placeholder="15000"
                   className={cn(
-                    "w-full rounded-2xl border bg-muted/30 px-3 py-4 pl-9 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 transition-all",
+                    "w-full rounded-2xl border bg-card px-3 py-4 pl-9 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 transition-all",
                     errors.buyPriceSupplier
                       ? "border-destructive/50 focus:ring-destructive/20"
                       : "border-border/50 focus:ring-orange-500/20 focus:border-orange-500/40",
@@ -201,7 +201,7 @@ export default function ProductCreatePage() {
                 type="number"
                 {...register("sizeMl", { valueAsNumber: true, setValueAs: (v) => (v === "" || isNaN(v) ? null : Number(v)) })}
                 placeholder="1000"
-                className="w-full rounded-2xl border border-border/50 bg-muted/30 px-4 py-4 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/40 transition-all"
+                className="w-full rounded-2xl border border-border/50 bg-card px-4 py-4 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/40 transition-all"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -215,7 +215,7 @@ export default function ProductCreatePage() {
                   {...register("batchSize", { valueAsNumber: true })}
                   placeholder="12"
                   className={cn(
-                    "w-full rounded-2xl border bg-muted/30 px-3 py-4 pl-9 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 transition-all",
+                    "w-full rounded-2xl border bg-card px-3 py-4 pl-9 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 transition-all",
                     errors.batchSize
                       ? "border-destructive/50 focus:ring-destructive/20"
                       : "border-border/50 focus:ring-orange-500/20 focus:border-orange-500/40",
@@ -236,7 +236,7 @@ export default function ProductCreatePage() {
                 {...register("description")}
                 placeholder="Notas adicionales (opcional)"
                 rows={2}
-                className="w-full rounded-2xl border border-border/50 bg-muted/30 px-4 py-4 pl-11 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/40 resize-none transition-all"
+                className="w-full rounded-2xl border border-border/50 bg-card px-4 py-4 pl-11 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/40 resize-none transition-all"
               />
             </div>
           </div>

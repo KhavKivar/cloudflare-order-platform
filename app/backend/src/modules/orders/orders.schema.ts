@@ -29,6 +29,7 @@ export const orderListItemSchema = z.object({
   clientId: z.number(),
   localName: z.string().nullable(),
   phone: z.string().nullable(),
+  address: z.string().nullable(),
   lines: z.array(orderLineItemSchema),
   purchaseOrderId: z.number().nullable(),
   status: orderStatusEnum,
