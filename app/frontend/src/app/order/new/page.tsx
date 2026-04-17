@@ -28,6 +28,7 @@ import {
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useLocation, useNavigate } from "react-router";
+import { useOrderDraftStore } from "@/features/orders/state/use-order-draft";
 import { toast } from "sonner";
 import z from "zod";
 
@@ -75,6 +76,7 @@ export default function OrdersPage() {
 
   const [selectClient, setSelectClient] = useState<Client | null>(null);
   const [selectProduct, setSelectProduct] = useState<Product | null>(null);
+  const { draft, clearDraft, setDraft } = useOrderDraftStore();
   const mutation = useMutation({ mutationFn: createOrder });
 
   const [order, setOrder] = useState<OrderCreateDto>({
@@ -96,25 +98,26 @@ export default function OrdersPage() {
     const state = location.state as NavState | null;
 
     if (!state) {
-      // Back button case: try sessionStorage draft
-      try {
-        const raw = sessionStorage.getItem("order-new-draft");
-        if (raw) {
-          const d = JSON.parse(raw) as NavState;
-          if (d.order) setOrder(d.order);
-          if (d.selectClient !== undefined) setSelectClient(d.selectClient);
-          if (d.selectProduct !== undefined) {
-            setSelectProduct(d.selectProduct);
-            if (d.selectProduct) {
-              setValue("item", d.selectProduct.name);
-              setValue("pricePerUnit", String(d.selectProduct.sellPriceClient));
-            }
+      const d = draft;
+      if (d) {
+        if (d.order) setOrder(d.order);
+        if (d.selectClient !== undefined) {
+          setSelectClient(d.selectClient);
+          if (d.selectClient) {
+            setValue("clientId", Number(d.selectClient.id), { shouldValidate: true });
+            setOrder((prev) => ({ ...prev, clientId: Number(d.selectClient!.id) }));
           }
-          if (d.formValues?.quantity)
-            setValue("quantity", d.formValues.quantity);
-          sessionStorage.removeItem("order-new-draft");
         }
-      } catch {}
+        if (d.selectProduct !== undefined) {
+          setSelectProduct(d.selectProduct);
+          if (d.selectProduct) {
+            setValue("item", d.selectProduct.name);
+            setValue("pricePerUnit", String(d.selectProduct.sellPriceClient));
+          }
+        }
+        if (d.formValues?.quantity) setValue("quantity", d.formValues.quantity);
+        clearDraft();
+      }
       return;
     }
 
@@ -156,7 +159,7 @@ export default function OrdersPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveDraftAndNavigate = (to: string) => {
-    const draft = {
+    const currentDraft = {
       order,
       selectClient,
       selectProduct,
@@ -166,8 +169,8 @@ export default function OrdersPage() {
         item: watch("item") ?? "",
       },
     };
-    sessionStorage.setItem("order-new-draft", JSON.stringify(draft));
-    navigate(to, { state: draft });
+    setDraft(currentDraft);
+    navigate(to, { state: currentDraft });
   };
 
   const orderItems = order.items.map((item) => {
@@ -196,7 +199,7 @@ export default function OrdersPage() {
     }
     mutation.mutate(order, {
       onSuccess: (created) => {
-        sessionStorage.removeItem("order-new-draft");
+        clearDraft();
 
         const optimisticOrder: OrderListItem = {
           orderId: created.id,
@@ -525,9 +528,9 @@ export default function OrdersPage() {
                     <button
                       type="button"
                       onClick={() => handleRemoveItem(item.productId)}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 transition-all"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all"
                     >
-                      <Trash2 className="size-3.5" />
+                      <Trash2 className="size-5" />
                     </button>
                   </div>
                 </div>

@@ -5,6 +5,7 @@ import { Search, Users } from "lucide-react";
 
 import httpClient from "@/lib/api-provider";
 import type { Client } from "@/features/client/api/client.schema";
+import { useOrderDraftStore } from "@/features/orders/state/use-order-draft";
 
 type ClientQuery = { clients: Client[] };
 
@@ -26,6 +27,7 @@ function ClientAvatar({ name }: { name: string }) {
 export default function SelectClientPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { setDraft } = useOrderDraftStore();
   const [search, setSearch] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -47,13 +49,8 @@ export default function SelectClientPage() {
   }, [data?.clients, search]);
 
   const handleSelect = (client: Client) => {
-    navigate("/order/new", {
-      replace: true,
-      state: {
-        ...(location.state ?? {}),
-        selectedClient: client,
-      },
-    });
+    setDraft({ ...(location.state ?? {}), selectClient: client });
+    navigate(-1);
   };
 
   return (

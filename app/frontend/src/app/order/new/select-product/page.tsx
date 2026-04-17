@@ -6,12 +6,14 @@ import { Package, Search } from "lucide-react";
 import httpClient from "@/lib/api-provider";
 import type { Product } from "@/features/orders/api/product.schema";
 import { formatChileanPeso } from "@/utils/format-currency";
+import { useOrderDraftStore } from "@/features/orders/state/use-order-draft";
 
 type ProductQuery = { products: Product[] };
 
 export default function SelectProductPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { setDraft } = useOrderDraftStore();
   const [search, setSearch] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -33,13 +35,8 @@ export default function SelectProductPage() {
   }, [data?.products, search]);
 
   const handleSelect = (product: Product) => {
-    navigate("/order/new", {
-      replace: true,
-      state: {
-        ...(location.state ?? {}),
-        selectedProduct: product,
-      },
-    });
+    setDraft({ ...(location.state ?? {}), selectProduct: product });
+    navigate(-1);
   };
 
   return (
