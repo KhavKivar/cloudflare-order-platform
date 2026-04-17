@@ -177,7 +177,7 @@ export default function ClientsAllPage() {
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 px-4 pt-6 pb-8 sm:px-6">
 
         {/* HEADER CARD */}
-        <div className="rounded-2xl border border-border/50 bg-card shadow-sm p-4 flex flex-col gap-3">
+        <div className="rounded-2xl border border-border bg-card shadow-sm dark:shadow-none p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
@@ -269,7 +269,7 @@ export default function ClientsAllPage() {
           {visibleClients.map((client) => (
             <article
               key={client.id}
-              className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card shadow-sm p-4 transition-colors hover:border-border/80"
+              className="flex items-center gap-3 rounded-2xl border border-border bg-card shadow-sm dark:shadow-none p-4 transition-colors hover:border-border/80"
             >
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
                 <Store className="h-5 w-5 text-primary" />

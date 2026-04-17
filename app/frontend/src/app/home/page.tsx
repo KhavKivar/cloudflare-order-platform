@@ -109,7 +109,7 @@ export default function Home() {
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pt-6 pb-4 sm:px-6 sm:pt-10">
 
         {/* HERO */}
-        <Card className="relative overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm">
+        <Card className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:shadow-none">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-transparent pointer-events-none" />
           <CardContent className="p-5 sm:p-7">
             <div className="flex items-start justify-between gap-4">
@@ -149,7 +149,7 @@ export default function Home() {
             <button
               key={item.id}
               onClick={() => navigate(item.href)}
-              className="w-full flex items-center gap-4 px-5 py-5 text-left rounded-2xl border border-border/50 bg-card shadow-sm active:bg-muted/30 transition-colors"
+              className="w-full flex items-center gap-4 px-5 py-5 text-left rounded-2xl border border-border bg-card shadow-sm dark:shadow-none active:bg-muted/40 hover:border-border/80 transition-colors"
             >
               <div className={cn("flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl", item.bgClass)}>
                 <item.icon className={cn("h-7 w-7", item.iconClass)} />
