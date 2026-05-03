@@ -41,11 +41,14 @@ export default function SelectClientPage() {
     return () => clearTimeout(id);
   }, []);
 
+  const normalizeText = (str: string) =>
+    str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
   const filtered = useMemo(() => {
     if (!data?.clients) return [];
     if (!search.trim()) return data.clients;
-    const q = search.toLowerCase();
-    return data.clients.filter((c) => c.localName.toLowerCase().includes(q));
+    const q = normalizeText(search);
+    return data.clients.filter((c) => normalizeText(c.localName).includes(q));
   }, [data?.clients, search]);
 
   const handleSelect = (client: Client) => {

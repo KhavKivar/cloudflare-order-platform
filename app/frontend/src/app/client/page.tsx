@@ -57,6 +57,9 @@ export default function ClientsAllPage() {
   const [isEditOpen, setEditOpen] = useState(false);
   const [search, setSearch] = useState("");
 
+  const normalizeText = (str: string) =>
+    str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
   const { data, isPending, error } = useQuery({
     queryKey: ["clients", "all"],
     queryFn: getClients,
@@ -139,12 +142,12 @@ export default function ClientsAllPage() {
 
   const filteredClients = useMemo(() => {
     if (!search.trim()) return clients;
-    const q = search.toLowerCase();
+    const q = normalizeText(search);
     return clients.filter(
       (c) =>
-        (c.localName ?? "").toLowerCase().includes(q) ||
-        (c.phone ?? "").toLowerCase().includes(q) ||
-        (c.address ?? "").toLowerCase().includes(q),
+        normalizeText(c.localName ?? "").includes(q) ||
+        normalizeText(c.phone ?? "").includes(q) ||
+        normalizeText(c.address ?? "").includes(q),
     );
   }, [clients, search]);
 

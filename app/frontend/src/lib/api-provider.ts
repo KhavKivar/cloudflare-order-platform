@@ -16,8 +16,13 @@ httpClient.interceptors.request.use((config) => {
   return config;
 });
 
+const DEV_DELAY_MS = 3000;
+
 httpClient.interceptors.response.use(
-  (response) => response,
+  (response) =>
+    import.meta.env.DEV
+      ? new Promise((resolve) => setTimeout(() => resolve(response), DEV_DELAY_MS))
+      : response,
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem("token");

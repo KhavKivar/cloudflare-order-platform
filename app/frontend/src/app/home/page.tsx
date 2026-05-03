@@ -83,61 +83,55 @@ export default function Home() {
 
   const { data: revenueData } = useQuery({ queryKey: ["revenue"], queryFn: getRevenue });
 
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const now = new Date();
+  const thisMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonthStart = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, "0")}-01`;
+  const lastMonthEnd = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, "0")}-${String(new Date(now.getFullYear(), now.getMonth(), 0).getDate()).padStart(2, "0")}`;
 
-  const currentMonthRevenue =
+  const thisMonthRevenue =
     revenueData?.revenue
-      .filter((r) => r.day.startsWith(currentMonth))
+      .filter((r) => r.day >= thisMonthStart)
       .reduce((sum, r) => sum + r.revenue, 0) ?? 0;
 
   const lastMonthRevenue =
     revenueData?.revenue
-      .filter((r) => {
-        const lastMonth = new Date();
-        lastMonth.setMonth(lastMonth.getMonth() - 1);
-        return r.day.startsWith(lastMonth.toISOString().slice(0, 7));
-      })
+      .filter((r) => r.day >= lastMonthStart && r.day <= lastMonthEnd)
       .reduce((sum, r) => sum + r.revenue, 0) ?? 0;
-
-  const growthPercent =
-    lastMonthRevenue > 0
-      ? Math.round(((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100)
-      : null;
 
   return (
     <div className="min-h-screen bg-background selection:bg-primary/30">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pt-6 pb-4 sm:px-6 sm:pt-10">
 
         {/* HERO */}
-        <Card className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:shadow-none">
+        <Card className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-border bg-card shadow-sm dark:shadow-none">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-transparent pointer-events-none" />
-          <CardContent className="p-5 sm:p-7">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground/60">
-                  <BarChart3 className="h-3.5 w-3.5" />
-                  <span>Ventas del mes</span>
-                </div>
-                <p className="text-4xl font-black tracking-tighter text-foreground sm:text-5xl">
-                  {formatChileanPeso(currentMonthRevenue)}
-                </p>
-                {growthPercent !== null && (
-                  <div
-                    className={cn(
-                      "flex items-center gap-1 text-sm font-bold",
-                      growthPercent >= 0 ? "text-success" : "text-destructive",
-                    )}
-                  >
-                    <TrendingUp className="h-3.5 w-3.5" />
-                    <span>
-                      {growthPercent >= 0 ? "+" : ""}
-                      {growthPercent}% vs mes anterior
-                    </span>
+          <CardContent className="p-4 sm:p-7">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 space-y-3">
+                <div>
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-0.5">
+                    <TrendingUp className="h-3 w-3" />
+                    <span>Ganancia este mes</span>
                   </div>
-                )}
+                  <p className="text-2xl font-black tracking-tighter text-foreground sm:text-4xl">
+                    {formatChileanPeso(thisMonthRevenue)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-4 border-t border-border/50 pt-3">
+                  <div>
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-0.5">
+                      <BarChart3 className="h-3 w-3" />
+                      <span>Ganancia mes anterior</span>
+                    </div>
+                    <p className="text-lg font-black tracking-tighter text-muted-foreground/80 sm:text-3xl">
+                      {formatChileanPeso(lastMonthRevenue)}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
-                <TrendingUp className="h-6 w-6 text-primary" />
+              <div className="flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-primary/10 border border-primary/20 self-center">
+                <TrendingUp className="h-4 w-4 sm:h-6 sm:w-6 text-primary" />
               </div>
             </div>
           </CardContent>

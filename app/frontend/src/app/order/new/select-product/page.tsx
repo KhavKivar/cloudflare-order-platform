@@ -27,11 +27,14 @@ export default function SelectProductPage() {
     return () => clearTimeout(id);
   }, []);
 
+  const normalizeText = (str: string) =>
+    str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
   const filtered = useMemo(() => {
     if (!data?.products) return [];
     if (!search.trim()) return data.products;
-    const q = search.toLowerCase();
-    return data.products.filter((p) => p.name.toLowerCase().includes(q));
+    const q = normalizeText(search);
+    return data.products.filter((p) => normalizeText(p.name).includes(q));
   }, [data?.products, search]);
 
   const handleSelect = (product: Product) => {

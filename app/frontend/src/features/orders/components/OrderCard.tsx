@@ -4,8 +4,7 @@ import {
   DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
-  DialogHeader,
+
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
@@ -293,21 +292,28 @@ export default function OrderCard({
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </DialogTrigger>
-                  <DialogContent onClick={(e) => e.stopPropagation()}>
-                    <DialogHeader>
-                      <DialogTitle>¿Eliminar pedido?</DialogTitle>
-                      <DialogDescription>
-                        Esta acción no se puede deshacer. Se eliminará el
-                        registro del pedido #{id}.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter className="gap-2 sm:gap-0">
-                      <DialogClose asChild>
-                        <Button variant="outline">Cancelar</Button>
-                      </DialogClose>
+                  <DialogContent
+                    onClick={(e) => e.stopPropagation()}
+                    className="rounded-2xl max-w-sm p-6 gap-0"
+                  >
+                    <div className="flex flex-col items-center text-center gap-4 pb-6">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10">
+                        <Trash2 className="h-6 w-6 text-destructive" />
+                      </div>
+                      <div>
+                        <DialogTitle className="text-lg font-black text-foreground">
+                          ¿Eliminar pedido?
+                        </DialogTitle>
+                        <DialogDescription className="mt-1 text-sm text-muted-foreground">
+                          Esta acción no se puede deshacer. Se eliminará el registro del pedido #{id}.
+                        </DialogDescription>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
                       <Button
                         variant="destructive"
                         disabled={isDeleting}
+                        className="h-11 rounded-xl font-bold"
                         onClick={(e) => {
                           e.stopPropagation();
                           onDelete(id);
@@ -318,7 +324,12 @@ export default function OrderCard({
                         ) : null}
                         {isDeleting ? "Eliminando..." : "Eliminar Pedido"}
                       </Button>
-                    </DialogFooter>
+                      <DialogClose asChild>
+                        <Button variant="ghost" className="h-11 rounded-xl font-bold text-muted-foreground">
+                          Cancelar
+                        </Button>
+                      </DialogClose>
+                    </div>
                   </DialogContent>
                 </Dialog>
               )}

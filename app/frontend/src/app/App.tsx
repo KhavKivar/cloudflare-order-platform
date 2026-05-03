@@ -6,6 +6,7 @@ import Home from "./home/page";
 import Layout from "./layout";
 
 import OrderEditPage from "./order/edit/page";
+import EditSelectProductPage from "./order/edit/select-product/page";
 import OrderCreatePage from "./order/new/page";
 import SelectClientPage from "./order/new/select-client/page";
 import SelectProductPage from "./order/new/select-product/page";
@@ -38,6 +39,7 @@ function App() {
             <Route path="/order/new/select-client" element={<SelectClientPage />} />
             <Route path="/order/new/select-product" element={<SelectProductPage />} />
             <Route path="/order/:id/edit" element={<OrderEditPage />} />
+            <Route path="/order/:id/edit/select-product" element={<EditSelectProductPage />} />
 
             <Route path="/client" element={<ClientListPage />} />
             <Route path="/client/new" element={<ClientCreatePage />} />
