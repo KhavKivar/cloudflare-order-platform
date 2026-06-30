@@ -2,58 +2,69 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, ShoppingBag, X } from "lucide-react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useOfflineStatus } from "@/hooks/use-offline";
+import { useDebounce } from "@/hooks/use-debounce";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { deleteOrder } from "@/features/orders/api/delete-order";
-import { type OrderListItem, type OrdersResponse } from "@/features/orders/api/get-orders";
+import { getOrders, type OrderListItem, type OrdersResponse } from "@/features/orders/api/get-orders";
 import { type OrderStatus, updateOrderStatus } from "@/features/orders/api/update-order-status";
-import { queryKeys, queryFns } from "@/features/orders/config/constants";
+import { queryKeys } from "@/features/orders/config/constants";
 import OrderCard from "@/features/orders/components/OrderCard";
 
 export default function OrdersListPage() {
   const navigate = useNavigate();
+  const { isOffline } = useOfflineStatus();
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("active");
+  const [searchByProduct, setSearchByProduct] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("pending");
   const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
   const [deletingOrderId, setDeletingOrderId] = useState<number | null>(null);
-  const [pinnedIds, setPinnedIds] = useState<Set<number>>(new Set());
 
-  const { data, isPending, error } = useQuery<OrdersResponse>({
+  const debouncedSearch = useDebounce(search, 400);
+
+  const { data, isPending, isFetching, error } = useQuery<OrdersResponse>({
     queryKey: queryKeys.orders,
-    queryFn: queryFns.orders,
+    queryFn: () => getOrders(),
   });
 
-  let filteredOrders = data?.orders ?? [];
-  if (statusFilter === "active") {
-    filteredOrders = filteredOrders.filter((o) => o.status !== "delivered_paid" || pinnedIds.has(o.orderId));
-  } else if (statusFilter !== "all") {
-    filteredOrders = filteredOrders.filter((o) => o.status === statusFilter || pinnedIds.has(o.orderId));
-  }
-  if (search.trim()) {
-    const normalize = (s: string) =>
-      s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
-    const q = normalize(search);
-    filteredOrders = filteredOrders.filter(
-      (o) =>
-        normalize(o.localName ?? "").includes(q) ||
-        String(o.orderId).includes(q),
-    );
-  }
+  const filteredOrders = (data?.orders ?? []).filter((order) => {
+    if (statusFilter !== "all") {
+      if (statusFilter === "no_oc") {
+        if (order.purchaseOrderId !== null || order.status === "cancelled") return false;
+      } else {
+        if (order.status !== statusFilter) return false;
+      }
+    }
+
+    const term = debouncedSearch.trim().toLowerCase();
+    if (term) {
+      if (searchByProduct) {
+        const hasMatch = order.lines.some((l) =>
+          l.productName?.toLowerCase().includes(term),
+        );
+        if (!hasMatch) return false;
+      } else {
+        const matchesName = order.localName?.toLowerCase().includes(term);
+        const matchesId = String(order.orderId).includes(term);
+        if (!matchesName && !matchesId) return false;
+      }
+    }
+
+    return true;
+  });
 
   const deleteMutation = useMutation({
     mutationFn: (payload: { orderId: number; order: OrderListItem }) =>
       deleteOrder(payload.orderId),
-    onSuccess: (_, payload) => {
+    onSuccess: () => {
       toast.success("Pedido eliminado correctamente");
-      queryClient.setQueryData<OrdersResponse>(queryKeys.orders, (old) => {
-        if (!old) return old;
-        return { orders: old.orders.filter((o) => o.orderId !== payload.orderId) };
-      });
       queryClient.invalidateQueries({ queryKey: queryKeys.orders });
     },
     onSettled: () => setDeletingOrderId(null),
@@ -69,24 +80,7 @@ export default function OrdersListPage() {
   const updateStatusMutation = useMutation({
     mutationFn: (payload: { orderId: number; status: OrderStatus }) =>
       updateOrderStatus(payload.orderId, payload.status),
-    onMutate: async (payload) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.orders });
-      const snapshot = queryClient.getQueryData<OrdersResponse>(queryKeys.orders);
-      queryClient.setQueryData<OrdersResponse>(queryKeys.orders, (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          orders: old.orders.map((o) =>
-            o.orderId === payload.orderId ? { ...o, status: payload.status } : o,
-          ),
-        };
-      });
-      return { snapshot };
-    },
-    onError: (_, __, context) => {
-      if (context?.snapshot) {
-        queryClient.setQueryData(queryKeys.orders, context.snapshot);
-      }
+    onError: () => {
       toast.error("Error al actualizar estado");
     },
     onSuccess: () => {
@@ -99,20 +93,36 @@ export default function OrdersListPage() {
 
   const handleDelete = (order: OrderListItem) => {
     if (deleteMutation.isPending) return;
+    if (isOffline) {
+      toast.error("Esta acción requiere conexión a internet");
+      return;
+    }
     setDeletingOrderId(order.orderId);
     deleteMutation.mutate({ orderId: order.orderId, order });
   };
 
   const handleStatusChange = (orderId: number, newStatus: OrderStatus) => {
+    if (isOffline) {
+      toast.error("Esta acción requiere conexión a internet");
+      return;
+    }
     setUpdatingOrderId(orderId);
-    setPinnedIds((prev) => new Set(prev).add(orderId));
     updateStatusMutation.mutate({ orderId, status: newStatus });
   };
 
   const handleFilterChange = (value: string) => {
     setStatusFilter(value);
-    setPinnedIds(new Set());
   };
+
+  const parentRef = useRef(null);
+  const virtualizer = useWindowVirtualizer({
+    count: filteredOrders.length,
+    estimateSize: () => 200,
+    overscan: 5,
+  });
+
+  const virtualItems = virtualizer.getVirtualItems();
+  const totalSize = virtualizer.getTotalSize();
 
   return (
     <div className="min-h-screen bg-background">
@@ -131,8 +141,11 @@ export default function OrdersListPage() {
                 <h1 className="text-2xl font-black tracking-tight text-foreground leading-none">
                   Lista de Pedidos
                 </h1>
-                <p className="text-xs font-medium text-muted-foreground/60 mt-0.5">
-                  {filteredOrders.length} de {data?.orders.length ?? 0} pedidos
+                <p className="text-xs font-medium text-muted-foreground/60 mt-0.5 flex items-center gap-1.5">
+                  {filteredOrders.length} pedidos
+                  {isFetching && !isPending && (
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary/60 animate-pulse" />
+                  )}
                 </p>
               </div>
             </div>
@@ -148,9 +161,10 @@ export default function OrdersListPage() {
           {/* STATUS FILTERS */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar">
             {[
-              { value: "active",  label: "Activos" },
-              { value: "pending", label: "Pendiente" },
-              { value: "all",     label: "Todos" },
+              { value: "pending",   label: "Pendiente" },
+              { value: "all",       label: "Todos" },
+              { value: "cancelled", label: "Cancelados" },
+              { value: "no_oc",     label: "Sin OC" },
             ].map((f) => (
               <button
                 key={f.value}
@@ -171,7 +185,7 @@ export default function OrdersListPage() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 z-10 pointer-events-none" />
             <Input
               type="text"
-              placeholder="Buscar por cliente o ID..."
+              placeholder={searchByProduct ? "Buscar por producto..." : "Buscar por cliente o ID..."}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="rounded-full bg-background border-border/40 pl-11 pr-10 h-11 focus-visible:ring-primary/30 focus-visible:border-primary/30"
@@ -186,7 +200,22 @@ export default function OrdersListPage() {
             )}
           </div>
 
+          {/* SEARCH BY PRODUCT TOGGLE */}
+          <label className="flex items-center gap-2 px-1 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={searchByProduct}
+              onChange={(e) => setSearchByProduct(e.target.checked)}
+              className="h-4 w-4 rounded border-border/40 text-primary focus:ring-primary/30 focus:ring-offset-0"
+            />
+            <span className="text-xs font-medium text-muted-foreground">Buscar solo por producto</span>
+          </label>
+
         </div>
+
+        {isFetching && !isPending && (
+          <div className="h-0.5 -mt-2 rounded-full bg-gradient-to-r from-primary/80 via-primary/40 to-transparent animate-pulse" />
+        )}
 
         {/* FEEDBACK STATES */}
         {isPending && (
@@ -249,7 +278,7 @@ export default function OrdersListPage() {
           </div>
         )}
 
-        {!isPending && !error && data?.orders.length === 0 && (
+        {!isPending && !error && filteredOrders.length === 0 && !debouncedSearch.trim() && (
           <div className="flex flex-col items-center justify-center py-16 px-6 text-center border border-dashed border-border/40 rounded-2xl mt-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/40 mb-4">
               <ShoppingBag className="h-7 w-7 text-muted-foreground/40" />
@@ -261,7 +290,7 @@ export default function OrdersListPage() {
           </div>
         )}
 
-        {!isPending && !error && data?.orders && filteredOrders.length === 0 && search && (
+        {!isPending && !error && filteredOrders.length === 0 && debouncedSearch.trim() && (
           <div className="flex flex-col items-center justify-center py-12 px-6 text-center border border-dashed border-border/40 rounded-2xl mt-4">
             <h3 className="text-base font-black text-foreground">Sin resultados</h3>
             <p className="text-sm text-muted-foreground/60 mt-1">
@@ -277,28 +306,49 @@ export default function OrdersListPage() {
         )}
 
         {/* LIST */}
-        <section className="flex flex-col gap-3">
-          {filteredOrders.map((order) => (
-            <OrderCard
-              key={order.orderId}
-              id={order.orderId}
-              localName={order.localName ?? "Cliente Local"}
-              status={order.status}
-              createdAt={order.createdAt}
-              items={order.lines.map((item) => ({
-                name: item.productName ?? "Producto",
-                quantity: item.quantity,
-                pricePerUnit: item.pricePerUnit,
-                buyPriceSupplier: item.buyPriceSupplier,
-              }))}
-              onEdit={(orderId) => navigate(`/order/${orderId}/edit`)}
-              onDelete={() => handleDelete(order)}
-              onStatusChange={handleStatusChange}
-              isSelected={false}
-              isUpdating={updatingOrderId === order.orderId}
-              isDeleting={deletingOrderId === order.orderId}
-            />
-          ))}
+        <section
+          ref={parentRef}
+          className="flex flex-col gap-3 relative"
+          style={{ height: `${totalSize}px` }}
+        >
+          {virtualItems.map((virtualItem) => {
+            const order = filteredOrders[virtualItem.index];
+            return (
+              <div
+                key={virtualItem.key}
+                data-index={virtualItem.index}
+                ref={virtualizer.measureElement}
+                className={virtualItem.index < filteredOrders.length - 1 ? "pb-3" : ""}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  transform: `translateY(${virtualItem.start}px)`,
+                }}
+              >
+                <OrderCard
+                  id={order.orderId}
+                  localName={order.localName ?? "Cliente Local"}
+                  status={order.status}
+                  purchaseOrderId={order.purchaseOrderId}
+                  createdAt={order.createdAt}
+                  items={order.lines.map((item) => ({
+                    name: item.productName ?? "Producto",
+                    quantity: item.quantity,
+                    pricePerUnit: item.pricePerUnit,
+                    buyPriceSupplier: item.buyPriceSupplier,
+                  }))}
+                  onEdit={(orderId) => navigate(`/order/${orderId}/edit`)}
+                  onDelete={() => handleDelete(order)}
+                  onStatusChange={handleStatusChange}
+                  isSelected={false}
+                  isUpdating={updatingOrderId === order.orderId}
+                  isDeleting={deletingOrderId === order.orderId}
+                />
+              </div>
+            );
+          })}
         </section>
       </div>
     </div>

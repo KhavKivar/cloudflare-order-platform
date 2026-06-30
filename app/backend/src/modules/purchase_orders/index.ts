@@ -9,8 +9,12 @@ const purchaseOrdersApp = new Hono<{ Bindings: Bindings }>();
 purchaseOrdersApp.get("/", async (c) => {
   const db = getDb(c.env);
   const purchaseOrderService = new PurchaseOrderService(db);
-  const orders = await purchaseOrderService.listPurchaseOrders();
-  return c.json({ orders });
+  const { limit, cursor } = c.req.query();
+  const result = await purchaseOrderService.listPurchaseOrders({
+    limit: limit ? parseInt(limit) : undefined,
+    cursor: cursor ? parseInt(cursor) : undefined,
+  });
+  return c.json(result);
 });
 
 purchaseOrdersApp.get("/:id", async (c) => {

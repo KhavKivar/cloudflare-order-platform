@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray, lt } from "drizzle-orm";
 import { DrizzleD1Database } from "drizzle-orm/d1";
 import {
   clients,
@@ -18,7 +18,24 @@ import {
 export class PurchaseOrderService {
   constructor(private readonly db: DrizzleD1Database<any>) {}
 
-  async listPurchaseOrders(): Promise<OrderPurchaseListItem[]> {
+  async listPurchaseOrders(params?: {
+    limit?: number;
+    cursor?: number;
+  }): Promise<{ orders: OrderPurchaseListItem[]; nextCursor: number | null }> {
+    const limit = params?.limit ?? 15;
+
+    const pageIds = await this.db
+      .select({ id: purchaseOrders.id })
+      .from(purchaseOrders)
+      .where(params?.cursor ? lt(purchaseOrders.id, params.cursor) : undefined)
+      .orderBy(desc(purchaseOrders.id))
+      .limit(limit)
+      .all();
+
+    if (pageIds.length === 0) return { orders: [], nextCursor: null };
+
+    const ids = pageIds.map((r) => r.id);
+
     const rows = await this.db
       .select({
         createdAt: purchaseOrders.createdAt,
@@ -36,6 +53,8 @@ export class PurchaseOrderService {
       .leftJoin(orders, eq(orders.purchaseOrderId, purchaseOrders.id))
       .leftJoin(orderLines, eq(orders.id, orderLines.orderId))
       .leftJoin(products, eq(orderLines.productId, products.id))
+      .where(inArray(purchaseOrders.id, ids))
+      .orderBy(desc(purchaseOrders.id))
       .all();
 
     const ordersMap = new Map<number, OrderPurchaseListItem>();
@@ -71,7 +90,8 @@ export class PurchaseOrderService {
       });
     }
 
-    return Array.from(ordersMap.values());
+    const nextCursor = pageIds.length === limit ? Math.min(...ids) : null;
+    return { orders: Array.from(ordersMap.values()), nextCursor };
   }
 
   async updatePurchaseOrderStatus(

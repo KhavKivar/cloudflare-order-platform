@@ -3,6 +3,7 @@ import { getPurchaseOrders } from "@/features/purchase-orders/api/get-purchase-o
 
 export const purchaseOrderKeys = {
   all: ["purchase-orders"] as const,
+  list: () => ["purchase-orders", "list"] as const,
   detail: (id: number) => ["purchase-order", id] as const,
 };
 

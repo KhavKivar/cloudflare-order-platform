@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Calendar,
   ChevronDown,
@@ -8,11 +8,13 @@ import {
   Package,
   Plus,
   Receipt,
+  RefreshCw,
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
+import { useOfflineStatus } from "@/hooks/use-offline";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,15 +29,15 @@ import {
 } from "@/components/ui/dialog";
 import { deletePurchaseOrder } from "@/features/purchase-orders/api/delete-purchase-order";
 import {
+  getPurchaseOrders,
   type PurchaseOrderLine,
   type PurchaseOrderListItem,
-  type PurchaseOrdersResponse,
 } from "@/features/purchase-orders/api/get-purchase-orders";
 import {
   updatePurchaseOrderStatus,
   type PurchaseOrderStatus,
 } from "@/features/purchase-orders/api/update-purchase-order-status";
-import { purchaseOrderKeys, purchaseOrderFns } from "@/features/purchase-orders/config/constants";
+import { purchaseOrderKeys } from "@/features/purchase-orders/config/constants";
 import { cn } from "@/lib/utils";
 import { formatChileanPeso } from "@/utils/format-currency";
 
@@ -72,21 +74,29 @@ const STATUS_CONFIG: Record<string, { label: string; style: string; topBorder: s
 
 export default function PurchaseOrdersListPage() {
   const navigate = useNavigate();
+  const { isOffline } = useOfflineStatus();
   const queryClient = useQueryClient();
 
-  const { data, isPending, error } = useQuery({
-    queryKey: purchaseOrderKeys.all,
-    queryFn: purchaseOrderFns.all,
+  const {
+    data,
+    isPending,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: purchaseOrderKeys.list(),
+    queryFn: ({ pageParam }) => getPurchaseOrders({ pageParam }),
+    initialPageParam: undefined as number | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
+
+  const allOrders = data?.pages.flatMap((p) => p.orders) ?? [];
 
   const deleteMutation = useMutation({
     mutationFn: deletePurchaseOrder,
-    onSuccess: (_, orderId) => {
+    onSuccess: () => {
       toast.success("Orden de compra eliminada correctamente");
-      queryClient.setQueryData<PurchaseOrdersResponse>(purchaseOrderKeys.all, (old) => {
-        if (!old) return old;
-        return { orders: old.orders.filter((o) => o.purchaseOrderId !== orderId) };
-      });
       queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.all });
     },
     onError: (mutationError) => {
@@ -101,6 +111,10 @@ export default function PurchaseOrdersListPage() {
 
   const handleDelete = (orderId: number) => {
     if (deleteMutation.isPending) return;
+    if (isOffline) {
+      toast.error("Esta acción requiere conexión a internet");
+      return;
+    }
     setDeletingOrderId(orderId);
     deleteMutation.mutate(orderId);
   };
@@ -112,18 +126,10 @@ export default function PurchaseOrdersListPage() {
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: PurchaseOrderStatus }) =>
       updatePurchaseOrderStatus(id, status),
-    onMutate: async ({ id, status }) => {
-      await queryClient.cancelQueries({ queryKey: purchaseOrderKeys.all });
-      const snapshot = queryClient.getQueryData<PurchaseOrdersResponse>(purchaseOrderKeys.all);
-      queryClient.setQueryData<PurchaseOrdersResponse>(purchaseOrderKeys.all, (old) => {
-        if (!old) return old;
-        return { orders: old.orders.map((o) => o.purchaseOrderId === id ? { ...o, status } : o) };
-      });
+    onMutate: ({ id }) => {
       setUpdatingOrderId(id);
-      return { snapshot };
     },
-    onError: (_, __, context) => {
-      if (context?.snapshot) queryClient.setQueryData(purchaseOrderKeys.all, context.snapshot);
+    onError: () => {
       toast.error("No se pudo actualizar el estado.");
     },
     onSuccess: () => {
@@ -134,6 +140,10 @@ export default function PurchaseOrdersListPage() {
   });
 
   const handleStatusChange = (orderId: number, status: PurchaseOrderStatus) => {
+    if (isOffline) {
+      toast.error("Esta acción requiere conexión a internet");
+      return;
+    }
     if (updatingOrderId) return;
     updateStatusMutation.mutate({ id: orderId, status });
   };
@@ -188,7 +198,7 @@ export default function PurchaseOrdersListPage() {
                 Órdenes de Compra
               </h1>
               <p className="text-xs font-medium text-muted-foreground/60 mt-0.5">
-                {data?.orders?.length ?? 0} pendientes
+                {allOrders.length} órdenes
               </p>
             </div>
           </div>
@@ -218,7 +228,7 @@ export default function PurchaseOrdersListPage() {
           </div>
         )}
 
-        {!isPending && !error && (!data?.orders || data.orders.length === 0) && (
+        {!isPending && !error && allOrders.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 px-6 text-center border border-dashed border-border/40 rounded-2xl mt-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/40 mb-4">
               <Receipt className="h-7 w-7 text-muted-foreground/40" />
@@ -232,7 +242,7 @@ export default function PurchaseOrdersListPage() {
 
         {/* ORDER CARDS */}
         <section className="flex flex-col gap-3">
-          {data?.orders?.map((order) => {
+          {allOrders.map((order) => {
             const orderTotal = (order.lines ?? []).reduce(
               (total, line) => total + line.buyPriceSupplier * line.quantity,
               0,
@@ -328,10 +338,11 @@ export default function PurchaseOrdersListPage() {
                             <DialogClose asChild>
                               <Button variant="outline">Cancelar</Button>
                             </DialogClose>
-                            <Button
-                              variant="destructive"
-                              disabled={deletingOrderId === order.purchaseOrderId}
-                              onClick={() => handleDelete(order.purchaseOrderId)}
+<Button
+                                variant="destructive"
+                                disabled={isOffline || deletingOrderId === order.purchaseOrderId}
+                                title={isOffline ? "Sin conexión" : undefined}
+                                onClick={() => handleDelete(order.purchaseOrderId)}
                             >
                               {deletingOrderId === order.purchaseOrderId ? (
                                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -376,7 +387,8 @@ export default function PurchaseOrdersListPage() {
                     {SEGMENTED_OPTIONS.map((opt) => (
                       <button
                         key={opt.value}
-                        disabled={isUpdating}
+                        disabled={isOffline || isUpdating}
+                        title={isOffline ? "Sin conexión" : undefined}
                         onClick={() => handleStatusChange(order.purchaseOrderId, opt.value)}
                         className={cn(
                           "flex-1 rounded-lg py-2 text-xs font-bold uppercase tracking-wider transition-all border",
@@ -420,6 +432,21 @@ export default function PurchaseOrdersListPage() {
             <div className="flex items-center justify-center py-4">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/40" />
             </div>
+          )}
+
+          {hasNextPage && (
+            <button
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-border/40 text-sm font-bold text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors disabled:opacity-50"
+            >
+              {isFetchingNextPage ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              {isFetchingNextPage ? "Cargando..." : "Cargar más"}
+            </button>
           )}
         </section>
       </div>

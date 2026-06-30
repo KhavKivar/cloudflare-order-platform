@@ -17,16 +17,13 @@ export type PurchaseOrderListItem = {
 
 export type PurchaseOrdersResponse = {
   orders: PurchaseOrderListItem[];
+  nextCursor: number | null;
 };
 
-export const getPurchaseOrders = async (): Promise<PurchaseOrdersResponse> => {
-  const res = await httpClient.get("/purchase_orders");
-
-  const data: PurchaseOrdersResponse = res.data;
-
-  const ordersList = data.orders.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
-
-  return { orders: ordersList };
+export const getPurchaseOrders = async ({
+  pageParam,
+}: { pageParam?: number } = {}): Promise<PurchaseOrdersResponse> => {
+  const qs = pageParam ? `?cursor=${pageParam}` : "";
+  const res = await httpClient.get(`/purchase_orders${qs}`);
+  return res.data;
 };
