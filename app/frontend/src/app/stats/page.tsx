@@ -15,7 +15,7 @@ import { useMemo, useState } from "react";
 
 // --- Types & Helpers ---
 
-type WeeklyGain = { label: string; gain: number; start: Date };
+type MonthlyGain = { label: string; gain: number; year: number; month: number };
 type DailyGain = { label: string; gain: number; date: Date };
 type DateFilter = "this_month" | "last_month" | "3_months" | "all";
 
@@ -26,27 +26,10 @@ const DATE_FILTER_LABELS: Record<DateFilter, string> = {
   all: "Todo",
 };
 
-const MONTHS_SHORT = [
-  "Ene", "Feb", "Mar", "Abr", "May", "Jun",
-  "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
-];
-
 const parseRevenueDate = (value: string) => {
   const [year, month, day] = value.split("-").map(Number);
   if (!day || !month || !year) return null;
   return new Date(year, month - 1, day);
-};
-
-const formatShortDate = (date: Date) =>
-  `${String(date.getDate()).padStart(2, "0")} ${MONTHS_SHORT[date.getMonth()]}`;
-
-const getWeekStart = (date: Date) => {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
 };
 
 const getDateRange = (filter: DateFilter): { start: Date | null; end: Date | null } => {
@@ -91,31 +74,36 @@ const normalizeRevenue = (entries: Revenue[]) => {
     (a, b) => b.date.getTime() - a.date.getTime(),
   );
 
-  const weeklyMap = new Map<number, WeeklyGain>();
-  const chronologicalDays = [...dailyGains].reverse();
+  const monthNames = [
+    "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+    "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
+  ];
 
-  chronologicalDays.forEach((entry) => {
-    const weekStart = getWeekStart(entry.date);
-    const weekKey = weekStart.getTime();
-    const existing = weeklyMap.get(weekKey);
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const monthlyMap = new Map<string, MonthlyGain>();
+
+  dailyGains.forEach((entry) => {
+    if (entry.date.getFullYear() !== currentYear) return;
+    const monthKey = `${entry.date.getFullYear()}-${entry.date.getMonth()}`;
+    const existing = monthlyMap.get(monthKey);
     if (existing) {
       existing.gain += entry.gain;
     } else {
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-      weeklyMap.set(weekKey, {
-        label: `${formatShortDate(weekStart)} - ${formatShortDate(weekEnd)}`,
+      monthlyMap.set(monthKey, {
+        label: monthNames[entry.date.getMonth()],
         gain: entry.gain,
-        start: weekStart,
+        year: entry.date.getFullYear(),
+        month: entry.date.getMonth(),
       });
     }
   });
 
-  const weeklyGains = Array.from(weeklyMap.values()).sort(
-    (a, b) => b.start.getTime() - a.start.getTime(),
+  const monthlyGains = Array.from(monthlyMap.values()).sort(
+    (a, b) => a.year !== b.year ? a.year - b.year : a.month - b.month,
   );
 
-  return { dailyGains, weeklyGains };
+  return { dailyGains, monthlyGains };
 };
 
 // --- Main Component ---
@@ -130,47 +118,41 @@ export default function StatsPage() {
 
   const { data: ordersData } = useQuery({
     queryKey: ["orders"],
-    queryFn: getOrders,
+    queryFn: () => getOrders(),
   });
 
   const { start, end } = useMemo(() => getDateRange(dateFilter), [dateFilter]);
 
-  // Weekly bars never filtered — always show full weeks.
-  const { weeklyGains } = useMemo(
+  // Monthly bars always show all months of the current year.
+  const { monthlyGains } = useMemo(
     () => normalizeRevenue(data?.revenue ?? []),
     [data],
-  );
-
-  // Snap start to Monday of the containing week so edge-case days are included.
-  const effectiveStart = useMemo(
-    () => (start ? getWeekStart(start) : null),
-    [start],
   );
 
   // Daily breakdown and product rankings use the filtered range.
   const { dailyGains } = useMemo(() => {
     const entries = data?.revenue ?? [];
-    if (!effectiveStart && !end) return normalizeRevenue(entries);
+    if (!start && !end) return normalizeRevenue(entries);
     const filtered = entries.filter((e) => {
       const d = parseRevenueDate(e.day);
       if (!d) return false;
-      if (effectiveStart && d < effectiveStart) return false;
+      if (start && d < start) return false;
       if (end && d > end) return false;
       return true;
     });
     return normalizeRevenue(filtered);
-  }, [data, effectiveStart, end]);
+  }, [data, start, end]);
 
   const filteredOrders = useMemo(() => {
     const orders = ordersData?.orders ?? [];
-    if (!effectiveStart && !end) return orders;
+    if (!start && !end) return orders;
     return orders.filter((o) => {
       const d = new Date(o.createdAt);
-      if (effectiveStart && d < effectiveStart) return false;
+      if (start && d < start) return false;
       if (end && d > end) return false;
       return true;
     });
-  }, [ordersData, effectiveStart, end]);
+  }, [ordersData, start, end]);
 
   const topProductsBySales = useMemo(() => {
     if (!filteredOrders.length) return [];
@@ -192,8 +174,8 @@ export default function StatsPage() {
     }
 
     return Array.from(productMap.values())
-      .sort((a, b) => b.units - a.units)
-      .slice(0, 5);
+      .sort((a, b) => b.profit - a.profit)
+      .slice(0, 10);
   }, [filteredOrders]);
 
   const topClientsByProfit = useMemo(() => {
@@ -245,7 +227,13 @@ export default function StatsPage() {
     );
   }
 
-  const maxWeeklyGain = Math.max(...weeklyGains.map((w) => w.gain), 1);
+  const maxMonthlyGain = Math.max(...monthlyGains.map((m) => m.gain), 1);
+
+  const hasAnyData =
+    monthlyGains.length > 0 ||
+    topClientsByProfit.length > 0 ||
+    topProductsBySales.length > 0 ||
+    dailyGains.length > 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -266,7 +254,7 @@ export default function StatsPage() {
           </div>
         </div>
 
-        {dailyGains.length === 0 ? (
+        {!hasAnyData ? (
           <div className="flex flex-col items-center justify-center py-16 px-6 text-center border border-dashed border-border/40 rounded-2xl mt-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/40 mb-4">
               <BarChart3 className="h-7 w-7 text-muted-foreground/40" />
@@ -278,73 +266,101 @@ export default function StatsPage() {
           </div>
         ) : (
           <>
-            {/* WEEKLY BARS */}
-            {weeklyGains.length > 0 && (
+            {/* MONTHLY BARS */}
+            {monthlyGains.length > 0 && (
               <div className="rounded-2xl border border-border/60 bg-card shadow-sm p-5 space-y-3">
                 <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-1">
-                  Ingresos Semanales
+                  Ingresos Mensuales
                 </h3>
-                {weeklyGains.map((week, i) => (
+                {monthlyGains.map((m, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <div className="w-[72px] shrink-0 flex flex-col">
-                      <span className="text-[10px] font-black text-muted-foreground/50 leading-tight">
-                        S{i + 1}
-                      </span>
-                      <span className="text-[9px] text-muted-foreground/30 leading-tight">
-                        {week.label}
+                    <div className="w-[40px] shrink-0">
+                      <span className="text-xs font-black text-foreground/80">
+                        {m.label}
                       </span>
                     </div>
                     <div className="flex-1 h-2.5 rounded-full bg-muted/60 overflow-hidden">
                       <div
                         className={cn(
                           "h-full rounded-full transition-all duration-500",
-                          week.gain === Math.max(...weeklyGains.map((w) => w.gain))
+                          m.gain === maxMonthlyGain
                             ? "bg-gradient-to-r from-primary to-orange-500"
                             : "bg-gradient-to-r from-primary/70 to-orange-500/70",
                         )}
-                        style={{ width: `${(week.gain / maxWeeklyGain) * 100}%` }}
+                        style={{ width: `${(m.gain / maxMonthlyGain) * 100}%` }}
                       />
                     </div>
                     <span
                       className={cn(
                         "text-xs w-20 text-right shrink-0 font-bold",
-                        week.gain === Math.max(...weeklyGains.map((w) => w.gain))
+                        m.gain === maxMonthlyGain
                           ? "text-foreground font-black"
-                          : "text-muted-foreground/70",
+                          : "text-foreground/80",
                       )}
                     >
-                      {formatChileanPeso(week.gain)}
+                      {formatChileanPeso(m.gain)}
                     </span>
                   </div>
                 ))}
               </div>
             )}
 
+            {/* DATE FILTER — always visible */}
+            <div className="flex flex-wrap gap-2 px-1">
+              {(["this_month", "last_month", "3_months", "all"] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setDateFilter(f)}
+                  className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-black transition-colors border ${
+                    dateFilter === f
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background text-muted-foreground border-border/40 hover:bg-muted/40"
+                  }`}
+                >
+                  {DATE_FILTER_LABELS[f]}
+                </button>
+              ))}
+            </div>
+
+            {/* TOP CLIENTS BY PROFIT */}
+            <div className="rounded-2xl border border-border/60 bg-card shadow-sm p-5 space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60">
+                  Ganancia por cliente
+                </h3>
+              </div>
+              {topClientsByProfit.length > 0 ? (
+                topClientsByProfit.map((c, i) => (
+                  <div key={c.name} className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-[11px] font-black text-muted-foreground/40 w-4 shrink-0">
+                        {i + 1}
+                      </span>
+                      <span className="text-sm font-bold text-foreground truncate">{c.name}</span>
+                    </div>
+                    <span className="text-sm font-black text-success shrink-0">
+                      +{formatChileanPeso(Math.round(c.profit))}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm font-medium text-muted-foreground/50 py-2">
+                  No hay datos para el período seleccionado.
+                </p>
+              )}
+            </div>
+
             {/* TOP PRODUCTS BY SALES */}
-            {topProductsBySales.length > 0 && (
-              <div className="rounded-2xl border border-border/60 bg-card shadow-sm p-5 space-y-3">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="h-3.5 w-3.5 text-primary" />
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60">
-                    Más vendidos
-                  </h3>
-                </div>
-                <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                  {(["this_month", "last_month", "3_months", "all"] as const).map((f) => (
-                    <button
-                      key={f}
-                      onClick={() => setDateFilter(f)}
-                      className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-black transition-colors border ${
-                        dateFilter === f
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background text-muted-foreground border-border/40 hover:bg-muted/40"
-                      }`}
-                    >
-                      {DATE_FILTER_LABELS[f]}
-                    </button>
-                  ))}
-                </div>
-                {topProductsBySales.map((p, i) => (
+            <div className="rounded-2xl border border-border/60 bg-card shadow-sm p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-3.5 w-3.5 text-primary" />
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60">
+                  Mayor ganancia
+                </h3>
+              </div>
+              {topProductsBySales.length > 0 ? (
+                topProductsBySales.map((p, i) => (
                   <div key={p.name} className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="text-[11px] font-black text-muted-foreground/40 w-4 shrink-0">
@@ -359,62 +375,49 @@ export default function StatsPage() {
                       +{formatChileanPeso(Math.round(p.profit))}
                     </span>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {/* TOP CLIENTS BY PROFIT */}
-            {topClientsByProfit.length > 0 && (
-              <div className="rounded-2xl border border-border/60 bg-card shadow-sm p-5 space-y-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <TrendingUp className="h-3.5 w-3.5 text-primary" />
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60">
-                    Ganancia por cliente
-                  </h3>
-                </div>
-                {topClientsByProfit.map((c, i) => (
-                  <div key={c.name} className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-[11px] font-black text-muted-foreground/40 w-4 shrink-0">
-                        {i + 1}
-                      </span>
-                      <span className="text-sm font-bold text-foreground truncate">{c.name}</span>
-                    </div>
-                    <span className="text-sm font-black text-success shrink-0">
-                      +{formatChileanPeso(Math.round(c.profit))}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+                ))
+              ) : (
+                <p className="text-sm font-medium text-muted-foreground/50 py-2">
+                  No hay datos para el período seleccionado.
+                </p>
+              )}
+            </div>
 
             {/* DAILY LIST */}
             <section className="space-y-2">
               <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
                 Desglose por Jornada
               </h3>
-              {dailyGains.map((entry) => (
-                <div
-                  key={entry.label}
-                  className="flex items-center justify-between px-4 py-3 rounded-xl border border-border/40 bg-card shadow-sm hover:bg-muted/30 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/40 text-muted-foreground/50">
-                      <Calendar className="h-4 w-4" />
+              {dailyGains.length > 0 ? (
+                dailyGains.map((entry) => (
+                  <div
+                    key={entry.label}
+                    className="flex items-center justify-between px-4 py-3 rounded-xl border border-border/40 bg-card shadow-sm hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/40 text-muted-foreground/50">
+                        <Calendar className="h-4 w-4" />
+                      </div>
+                      <span className="text-sm font-bold text-foreground capitalize">
+                        {entry.date.toLocaleDateString("es-CL", {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "short",
+                        })}
+                      </span>
                     </div>
-                    <span className="text-sm font-bold text-foreground capitalize">
-                      {entry.date.toLocaleDateString("es-CL", {
-                        weekday: "short",
-                        day: "numeric",
-                        month: "short",
-                      })}
+                    <span className="text-sm font-black text-foreground tracking-tight">
+                      +{formatChileanPeso(entry.gain)}
                     </span>
                   </div>
-                  <span className="text-sm font-black text-foreground tracking-tight">
-                    +{formatChileanPeso(entry.gain)}
-                  </span>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 px-6 text-center border border-dashed border-border/40 rounded-2xl">
+                  <p className="text-sm font-medium text-muted-foreground/50">
+                    No hay jornadas registradas para el período seleccionado.
+                  </p>
                 </div>
-              ))}
+              )}
             </section>
           </>
         )}

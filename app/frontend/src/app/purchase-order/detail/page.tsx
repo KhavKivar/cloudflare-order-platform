@@ -3,6 +3,7 @@ import {
   AlertCircle,
   Calendar,
   ChevronDown,
+  Copy,
   Loader2,
   Package,
   Pencil,
@@ -13,6 +14,7 @@ import {
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
+import { useOfflineStatus } from "@/hooks/use-offline";
 
 import { Button } from "@/components/ui/button";
 import { getOrdersAvailable } from "@/features/orders/api/get-order-availables";
@@ -54,6 +56,8 @@ type ConsolidatedLine = {
   productName: string;
   quantity: number;
   buyPriceSupplier: number;
+  sizeMl?: number | null;
+  batchSize?: number | null;
 };
 
 type OrderLineInput = {
@@ -61,9 +65,50 @@ type OrderLineInput = {
   productName: string | null;
   buyPriceSupplier: number;
   quantity: number;
+  sizeMl?: number | null;
+  batchSize?: number | null;
 };
 
 type OrderWithLines = { lines: OrderLineInput[] };
+
+type PurchasePriceDifference = {
+  productId: number;
+  productName: string;
+  prices: number[];
+};
+
+const is200mlProduct = (sizeMl?: number | null, productName?: string | null): boolean => {
+  if (sizeMl === 200) return true;
+  if (productName && /200\s*ml/i.test(productName)) return true;
+  return false;
+};
+
+const formatQuantityFor200ml = (
+  quantity: number,
+  batchSize?: number | null,
+  sizeMl?: number | null,
+  productName?: string | null,
+): string | null => {
+  if (!is200mlProduct(sizeMl, productName)) return null;
+  const batch = batchSize && batchSize > 0 ? batchSize : 48;
+  const cajas = Math.floor(quantity / batch);
+  if (cajas === 0) return null;
+  const resto = quantity % batch;
+  if (resto === 0) {
+    return `${cajas} ${cajas === 1 ? "caja" : "cajas"} (${quantity} un)`;
+  }
+  return `${cajas} ${cajas === 1 ? "caja" : "cajas"} + ${resto} un (${quantity} un)`;
+};
+
+const formatCopyLine = (
+  line: { productName: string; quantity: number; buyPriceSupplier: number; sizeMl?: number | null; batchSize?: number | null },
+): string => {
+  const cajasText = formatQuantityFor200ml(line.quantity, line.batchSize, line.sizeMl, line.productName);
+  if (cajasText) {
+    return `• ${line.productName}: ${cajasText} x ${formatChileanPeso(line.buyPriceSupplier)} = ${formatChileanPeso(line.buyPriceSupplier * line.quantity)}`;
+  }
+  return `• ${line.productName}: ${line.quantity} x ${formatChileanPeso(line.buyPriceSupplier)} = ${formatChileanPeso(line.buyPriceSupplier * line.quantity)}`;
+};
 
 const buildConsolidatedLines = (orders: OrderWithLines[]): ConsolidatedLine[] => {
   const merged = new Map<number, ConsolidatedLine>();
@@ -79,10 +124,40 @@ const buildConsolidatedLines = (orders: OrderWithLines[]): ConsolidatedLine[] =>
         productName: line.productName ?? "Producto",
         quantity: line.quantity,
         buyPriceSupplier: line.buyPriceSupplier,
+        sizeMl: line.sizeMl ?? null,
+        batchSize: line.batchSize ?? null,
       });
     });
   });
   return Array.from(merged.values());
+};
+
+const findPurchasePriceDifferences = (
+  orders: OrderWithLines[],
+): PurchasePriceDifference[] => {
+  const products = new Map<number, { productName: string; prices: Set<number> }>();
+
+  orders.forEach((order) => {
+    order.lines.forEach((line) => {
+      const existing = products.get(line.productId);
+      if (existing) {
+        existing.prices.add(line.buyPriceSupplier);
+        return;
+      }
+      products.set(line.productId, {
+        productName: line.productName ?? "Producto",
+        prices: new Set([line.buyPriceSupplier]),
+      });
+    });
+  });
+
+  return Array.from(products.entries())
+    .filter(([, product]) => product.prices.size > 1)
+    .map(([productId, product]) => ({
+      productId,
+      productName: product.productName,
+      prices: Array.from(product.prices).sort((a, b) => a - b),
+    }));
 };
 
 // --- MAIN PAGE ---
@@ -90,11 +165,13 @@ const buildConsolidatedLines = (orders: OrderWithLines[]): ConsolidatedLine[] =>
 export default function PurchaseOrderDetailPage() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { isOffline } = useOfflineStatus();
   const purchaseOrderId = Number(id);
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
   const [showStatusStrip, setShowStatusStrip] = useState(false);
+  const [purchasePriceOverrides, setPurchasePriceOverrides] = useState<Record<number, string>>({});
 
   const updateStatusMutation = useMutation({
     mutationFn: (status: PurchaseOrderStatus) =>
@@ -109,7 +186,7 @@ export default function PurchaseOrderDetailPage() {
       );
       queryClient.setQueryData<PurchaseOrdersResponse>(purchaseOrderKeys.all, (old) => {
         if (!old) return old;
-        return { orders: old.orders.map((o) => o.purchaseOrderId === purchaseOrderId ? { ...o, status } : o) };
+        return { ...old, orders: old.orders.map((o) => o.purchaseOrderId === purchaseOrderId ? { ...o, status } : o) };
       });
       return { snapshotDetail, snapshotAll };
     },
@@ -162,6 +239,8 @@ export default function PurchaseOrderDetailPage() {
             buyPriceSupplier: l.buyPriceSupplier,
             quantity: l.quantity,
             lineTotal: l.lineTotal,
+            sizeMl: (l as { sizeMl?: number | null }).sizeMl ?? null,
+            batchSize: (l as { batchSize?: number | null }).batchSize ?? null,
           })),
         })) ?? snapshotDetail?.orders ?? [];
 
@@ -169,7 +248,7 @@ export default function PurchaseOrderDetailPage() {
         old ? { ...old, orders: optimisticOrders } : old,
       );
 
-      const consolidatedLines = new Map<number, { productId: number; productName: string | null; buyPriceSupplier: number; sellPriceClient: number; quantity: number }>();
+      const consolidatedLines = new Map<number, { productId: number; productName: string | null; buyPriceSupplier: number; sellPriceClient: number; quantity: number; sizeMl?: number | null; batchSize?: number | null }>();
       optimisticOrders.forEach((o) => {
         o.lines.forEach((l) => {
           const existing = consolidatedLines.get(l.productId);
@@ -182,6 +261,8 @@ export default function PurchaseOrderDetailPage() {
               buyPriceSupplier: l.buyPriceSupplier,
               sellPriceClient: 0,
               quantity: l.quantity,
+              sizeMl: (l as { sizeMl?: number | null }).sizeMl ?? null,
+              batchSize: (l as { batchSize?: number | null }).batchSize ?? null,
             });
           }
         });
@@ -190,6 +271,7 @@ export default function PurchaseOrderDetailPage() {
       queryClient.setQueryData<PurchaseOrdersResponse>(purchaseOrderKeys.all, (old) => {
         if (!old) return old;
         return {
+          ...old,
           orders: old.orders.map((o) =>
             o.purchaseOrderId === purchaseOrderId
               ? { ...o, lines: Array.from(consolidatedLines.values()) }
@@ -218,6 +300,21 @@ export default function PurchaseOrderDetailPage() {
     [purchaseOrder],
   );
 
+  const purchasePriceDifferences = useMemo(
+    () => (purchaseOrder ? findPurchasePriceDifferences(purchaseOrder.orders) : []),
+    [purchaseOrder],
+  );
+
+  const pricedConsolidated = useMemo(
+    () => consolidated.map((line) => {
+      const override = Number(purchasePriceOverrides[line.productId]);
+      return Number.isFinite(override) && override > 0
+        ? { ...line, buyPriceSupplier: override }
+        : line;
+    }),
+    [consolidated, purchasePriceOverrides],
+  );
+
   const effectiveSelectedOrderIds = useMemo(
     () => isEditing ? selectedOrderIds : (purchaseOrder?.orders.map((o) => o.orderId) ?? []),
     [isEditing, selectedOrderIds, purchaseOrder],
@@ -234,8 +331,8 @@ export default function PurchaseOrderDetailPage() {
   );
 
   const consolidatedTotal = useMemo(
-    () => consolidated.reduce((sum, l) => sum + l.buyPriceSupplier * l.quantity, 0),
-    [consolidated],
+    () => pricedConsolidated.reduce((sum, l) => sum + l.buyPriceSupplier * l.quantity, 0),
+    [pricedConsolidated],
   );
 
   const editConsolidatedTotal = useMemo(
@@ -261,6 +358,10 @@ export default function PurchaseOrderDetailPage() {
   };
 
   const handleSaveChanges = () => {
+    if (isOffline) {
+      toast.error("Esta acción requiere conexión a internet");
+      return;
+    }
     if (updateMutation.isPending || effectiveSelectedOrderIds.length === 0) return;
     updateMutation.mutate({ id: purchaseOrderId, orderListIds: effectiveSelectedOrderIds });
   };
@@ -281,8 +382,27 @@ export default function PurchaseOrderDetailPage() {
     );
   }
 
-  const displayLines = isEditing ? editConsolidated : consolidated;
+  const displayLines = isEditing ? editConsolidated : pricedConsolidated;
   const displayTotal = isEditing ? editConsolidatedTotal : consolidatedTotal;
+
+  const handleCopy = () => {
+    if (!purchaseOrder) return;
+    const orderText = [
+      `📦 Orden de Compra #${purchaseOrder.purchaseOrderId}`,
+      `🗓️ Fecha: ${new Date(purchaseOrder.createdAt).toLocaleDateString("es-CL")}`,
+      "",
+      ...displayLines.map((line) => formatCopyLine(line)),
+      "",
+      `💰 Total: ${formatChileanPeso(displayTotal)}`,
+      "Total a pedir al proveedor",
+    ].join("\n");
+    try {
+      navigator.clipboard.writeText(orderText);
+      toast.success("Orden copiada al portapapeles");
+    } catch {
+      toast.error("Error al copiar");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -351,8 +471,15 @@ export default function PurchaseOrderDetailPage() {
                       {SEGMENTED_OPTIONS.map((opt) => (
                         <button
                           key={opt.value}
-                          disabled={updateStatusMutation.isPending}
-                          onClick={() => updateStatusMutation.mutate(opt.value)}
+                          disabled={isOffline || updateStatusMutation.isPending}
+                          title={isOffline ? "Sin conexión" : undefined}
+                          onClick={() => {
+                            if (isOffline) {
+                              toast.error("Esta acción requiere conexión a internet");
+                              return;
+                            }
+                            updateStatusMutation.mutate(opt.value);
+                          }}
                           className={cn(
                             "flex-1 rounded-lg py-2 text-xs font-bold uppercase tracking-wider transition-all border",
                             purchaseOrder.status === opt.value
@@ -379,18 +506,78 @@ export default function PurchaseOrderDetailPage() {
                 </div>
               </div>
 
-              {!isEditing && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleStartEdit}
-                  className="h-9 rounded-xl border border-border/50 text-muted-foreground/70 hover:text-foreground hover:bg-muted/60 gap-1.5"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                  Modificar
-                </Button>
-              )}
+              <div className="flex items-center gap-1 shrink-0">
+                {!isEditing && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleStartEdit}
+                    className="h-9 rounded-xl border border-border/50 text-muted-foreground/70 hover:text-foreground hover:bg-muted/60 gap-1.5"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Modificar
+                  </Button>
+                )}
+              </div>
             </div>
+
+            {/* COPY DETAILS — after order, before consolidado */}
+            <Button
+              variant="outline"
+              onClick={handleCopy}
+              className="w-full rounded-xl bg-card border-border/50 shadow-sm gap-2 font-bold hover:bg-card/80"
+            >
+              <Copy className="h-4 w-4" />
+              Copiar detalles
+            </Button>
+
+            {!isEditing && purchasePriceDifferences.length > 0 && (
+              <div className="flex items-start gap-3 rounded-xl border border-amber-500/25 bg-amber-500/10 p-4">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-black text-amber-700 dark:text-amber-400">
+                    Hay productos con distintos precios de compra
+                  </p>
+                  <p className="mt-1 text-xs font-medium leading-relaxed text-foreground/80">
+                    Define el precio que se usará en este consolidado. Este cambio solo se aplica en esta pantalla.
+                  </p>
+                  <div className="mt-3 flex flex-col gap-3">
+                    {purchasePriceDifferences.map((product) => {
+                      const currentPrice = consolidated.find(
+                        (line) => line.productId === product.productId,
+                      )?.buyPriceSupplier;
+
+                      return (
+                        <label key={product.productId} className="flex flex-col gap-1.5">
+                          <span className="text-xs leading-relaxed text-foreground">
+                            <span className="font-black">{product.productName}:</span>{" "}
+                            <span className="font-bold text-foreground/80">
+                              {product.prices.map(formatChileanPeso).join(" y ")}
+                            </span>
+                          </span>
+                          <div className="flex items-center rounded-lg border border-amber-500/25 bg-background/80 focus-within:border-amber-500/50 focus-within:ring-1 focus-within:ring-amber-500/20">
+                            <span className="pl-3 text-sm font-bold text-muted-foreground">$</span>
+                            <input
+                              type="number"
+                              min="1"
+                              step="1"
+                              inputMode="numeric"
+                              aria-label={`Precio de compra de ${product.productName}`}
+                              value={purchasePriceOverrides[product.productId] ?? String(currentPrice ?? "")}
+                              onChange={(event) => setPurchasePriceOverrides((current) => ({
+                                ...current,
+                                [product.productId]: event.target.value,
+                              }))}
+                              className="h-10 w-full bg-transparent px-2 text-sm font-bold text-foreground outline-none"
+                            />
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* CONSOLIDATED CARD */}
             <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
@@ -419,7 +606,7 @@ export default function PurchaseOrderDetailPage() {
                           {line.productName}
                         </p>
                         <p className="text-xs text-muted-foreground/70">
-                          {line.quantity} unidades × {formatChileanPeso(line.buyPriceSupplier)}
+                          {formatQuantityFor200ml(line.quantity, line.batchSize, line.sizeMl, line.productName) ?? `${line.quantity} unidades`} × {formatChileanPeso(line.buyPriceSupplier)}
                         </p>
                       </div>
                       <span className="font-black text-base text-foreground shrink-0">
@@ -483,9 +670,15 @@ export default function PurchaseOrderDetailPage() {
                         </div>
                         <div className="divide-y divide-border/20 mt-1">
                           {order.lines.map((line, idx) => (
-                            <div key={idx} className="flex justify-between py-2 text-sm">
+                            <div key={idx} className="flex items-center justify-between gap-3 py-2 text-sm">
                               <span className="text-muted-foreground/70 truncate flex-1 pr-3">
                                 {line.quantity}x {line.productName}
+                              </span>
+                              <span className="shrink-0 text-right text-xs text-muted-foreground/70">
+                                <span className="block font-medium text-foreground/80">
+                                  {formatChileanPeso(line.buyPriceSupplier)} c/u
+                                </span>
+                                Precio de compra
                               </span>
                             </div>
                           ))}
@@ -565,10 +758,11 @@ export default function PurchaseOrderDetailPage() {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                onClick={handleSaveChanges}
-                disabled={selectedOrderIds.length === 0 || updateMutation.isPending}
-                className="h-10 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/20 disabled:opacity-40 gap-1.5"
+<Button
+                  onClick={handleSaveChanges}
+                  disabled={isOffline || selectedOrderIds.length === 0 || updateMutation.isPending}
+                  title={isOffline ? "Sin conexión" : undefined}
+                  className="h-10 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/20 disabled:opacity-40 gap-1.5"
               >
                 {updateMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
