@@ -1,8 +1,8 @@
 {
-  "name": "ordersapp-backend",
+  "name": "cloudflare-order-platform-backend",
   "version": "0.1.0",
   "private": true,
-  "description": "OrderSapp Backend - Cloudflare Worker",
+  "description": "Cloudflare Workers API for the order management platform",
   "type": "module",
   "scripts": {
     "dev": "wrangler dev --remote --env-file .env",
